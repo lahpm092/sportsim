@@ -1,0 +1,13 @@
+{
+  "ref_frame": 29,
+  "note": "Frame 29 (t≈5.8s). Camera elevated behind the left goal (pitch x=0). Pitch y grows with image x. Landmarks: goal post bases, six-yard front corners, penalty-box lines. 16.5m corners extrapolated along visible lines (±15px).",
+  "points": [
+    { "px": [482, 489], "pitch": [0.0, 30.34] },
+    { "px": [655, 486], "pitch": [0.0, 37.66] },
+    { "px": [425, 501], "pitch": [5.5, 24.84] },
+    { "px": [712, 499], "pitch": [5.5, 43.16] },
+    { "px": [247, 494], "pitch": [0.0, 13.84] },
+    { "px": [124, 545], "pitch": [16.5, 13.84] },
+    { "px": [950, 543], "pitch": [16.5, 54.16] }
+  ]
+}

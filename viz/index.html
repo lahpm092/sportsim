@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SportSim — A Chess Engine for Football</title>
+<style>
+  :root{
+    --paper:#efe6d0; --paper-deep:#e3d5b8; --paper-shadow:#cdbd9a;
+    --ink:#1c1712; --ink-soft:#4a4036; --ink-faint:#8a7d6a;
+    --blue:#2e64b0; --crimson:#a13a24; --gold:#a97b17;
+    --hairline:#d8c9a8;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden;background:var(--paper);color:var(--ink);
+    font-family:var(--serif);-webkit-font-smoothing:antialiased}
+  #stage{position:fixed;inset:0}
+  #stage canvas{display:block}
+
+  /* paper grain + vignette */
+  .grain{position:fixed;inset:0;pointer-events:none;z-index:40;opacity:.5;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.06'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .vignette{position:fixed;inset:0;pointer-events:none;z-index:39;
+    background:radial-gradient(ellipse 130% 105% at 50% 42%,transparent 55%,rgba(76,60,38,.20) 100%)}
+
+  /* chrome */
+  header{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;
+    justify-content:space-between;align-items:flex-start;padding:26px 34px;pointer-events:none}
+  .title h1{font-size:21px;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
+  .title .sub{font-size:12.5px;font-style:italic;color:var(--ink-soft);margin-top:4px;letter-spacing:.02em}
+  nav{display:flex;gap:6px;pointer-events:auto}
+  nav button{font-family:var(--serif);font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;
+    background:transparent;border:1px solid transparent;color:var(--ink-faint);
+    padding:8px 14px;cursor:pointer;transition:all .25s}
+  nav button:hover{color:var(--ink)}
+  nav button.active{color:var(--ink);border-bottom:1px solid var(--ink)}
+
+  /* transport */
+  #transport{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:50;
+    display:flex;align-items:center;gap:16px;padding:10px 22px;
+    background:color-mix(in srgb,var(--paper) 82%,transparent);
+    border:1px solid var(--hairline);border-radius:2px;backdrop-filter:blur(6px)}
+  #transport button{font-family:var(--serif);background:none;border:none;cursor:pointer;
+    color:var(--ink);font-size:15px;padding:2px 6px}
+  #transport .mode{font-size:10.5px;letter-spacing:.2em;color:var(--ink-faint);cursor:pointer;
+    text-transform:uppercase;padding:4px 8px;border:1px solid transparent}
+  #transport .mode.active{color:var(--ink);border:1px solid var(--hairline);border-radius:2px;background:var(--paper-deep)}
+  #scrub{-webkit-appearance:none;width:300px;height:2px;background:var(--hairline);outline:none}
+  #scrub::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;border-radius:50%;
+    background:var(--ink);cursor:pointer;border:2px solid var(--paper)}
+  #clock{font-variant-numeric:tabular-nums;font-size:12px;color:var(--ink-soft);min-width:86px}
+  #divergence{font-size:11px;color:var(--ink-faint);font-style:italic;min-width:150px;text-align:right}
+
+  /* panels */
+  .panel{position:fixed;z-index:45;background:color-mix(in srgb,var(--paper) 90%,transparent);
+    border:1px solid var(--hairline);border-radius:2px;backdrop-filter:blur(8px)}
+  #roster{left:34px;top:110px;padding:14px 16px;max-height:70vh;overflow-y:auto;width:172px}
+  #roster h3, .panel h3{font-size:10px;letter-spacing:.24em;text-transform:uppercase;
+    color:var(--ink-faint);margin-bottom:10px;font-weight:400}
+  .rosterrow{display:flex;align-items:center;gap:8px;padding:3.5px 4px;cursor:pointer;font-size:12.5px;
+    border-radius:2px;color:var(--ink-soft)}
+  .rosterrow:hover{background:var(--paper-deep)}
+  .rosterrow.sel{background:var(--paper-deep);color:var(--ink)}
+  .dot{width:7px;height:7px;border-radius:50%;flex:none}
+  .rosterrow .f{margin-left:auto;font-size:10.5px;color:var(--ink-faint);font-variant-numeric:tabular-nums}
+
+  #playercard{right:34px;top:110px;width:308px;padding:18px 20px;display:none}
+  #playercard.open{display:block}
+  #playercard h2{font-size:16px;font-weight:600;letter-spacing:.06em;margin-bottom:2px}
+  #playercard .role{font-size:11px;font-style:italic;color:var(--ink-faint);margin-bottom:12px}
+  .attr{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:11.5px}
+  .attr .name{width:88px;color:var(--ink-soft)}
+  .attr .barwrap{flex:1;height:12px;position:relative}
+  .attr .baseline{position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:var(--hairline)}
+  .attr .bar{position:absolute;top:2.5px;height:7px;background:var(--ink);border-radius:1px}
+  .attr .val{width:38px;text-align:right;font-size:10.5px;color:var(--ink-faint);font-variant-numeric:tabular-nums}
+  #motifs{margin-top:14px}
+  .motifrow{display:flex;align-items:center;gap:10px;margin:4px 0}
+  .motifrow svg{flex:none}
+  .motifrow .mbar{height:6px;background:var(--gold);opacity:.75;border-radius:1px}
+  .motifrow .mc{font-size:10px;color:var(--ink-faint);font-variant-numeric:tabular-nums}
+  #paramrows{margin-top:12px;font-size:10.5px;color:var(--ink-soft);
+    display:grid;grid-template-columns:1fr 1fr;gap:2px 14px;font-variant-numeric:tabular-nums}
+
+  /* film + evolution overlays */
+  .view{position:fixed;inset:0;z-index:44;display:none;overflow-y:auto;
+    padding:110px 40px 80px;background:var(--paper)}
+  .view.open{display:block}
+  #film .frame{max-width:1060px;margin:0 auto;border:1px solid var(--ink-soft);
+    padding:14px;background:var(--paper-deep);box-shadow:0 20px 60px rgba(60,45,25,.25)}
+  #film video{width:100%;display:block;filter:sepia(.12) contrast(1.02)}
+  #film .caption{font-size:12px;font-style:italic;color:var(--ink-soft);margin-top:10px;
+    display:flex;justify-content:space-between}
+  .charts{max-width:1060px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:26px}
+  .chart{border:1px solid var(--hairline);padding:18px 20px;background:color-mix(in srgb,var(--paper) 60%,transparent)}
+  .chart.wide{grid-column:1/-1}
+  .chart h3{margin-bottom:4px}
+  .chart .note{font-size:11px;font-style:italic;color:var(--ink-faint);margin-bottom:12px}
+  .chart svg text{font-family:var(--serif)}
+  .legend{display:flex;gap:18px;font-size:11px;color:var(--ink-soft);margin-bottom:8px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .meterrow{display:flex;align-items:center;gap:12px;margin:8px 0;font-size:12px}
+  .meterrow .name{width:120px;color:var(--ink-soft)}
+  .meterrow .track{flex:1;height:6px;background:var(--paper-deep);border-radius:3px;position:relative}
+  .meterrow .fill{position:absolute;top:0;bottom:0;left:0;background:var(--ink);border-radius:3px}
+  .meterrow .val{width:40px;text-align:right;color:var(--ink-faint);font-variant-numeric:tabular-nums;font-size:11px}
+  table.datat{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:8px}
+  table.datat th{text-align:left;font-weight:400;font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--ink-faint);padding:4px 8px;border-bottom:1px solid var(--hairline)}
+  table.datat td{padding:4px 8px;border-bottom:1px solid color-mix(in srgb,var(--hairline) 50%,transparent);
+    font-variant-numeric:tabular-nums;color:var(--ink-soft)}
+  .tswitch{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint);
+    cursor:pointer;float:right;border:none;background:none;font-family:var(--serif)}
+  .tswitch:hover{color:var(--ink)}
+
+  #tooltip{position:fixed;z-index:60;pointer-events:none;display:none;
+    background:var(--ink);color:var(--paper);font-size:11px;padding:6px 10px;border-radius:2px;
+    font-variant-numeric:tabular-nums;letter-spacing:.02em;max-width:240px}
+
+  footer{position:fixed;left:34px;bottom:24px;z-index:41;font-size:10px;color:var(--ink-faint);
+    font-style:italic;letter-spacing:.03em;pointer-events:none}
+  body.overlay-open #roster, body.overlay-open #playercard,
+  body.overlay-open #transport, body.overlay-open footer{display:none}
+  #loading{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
+    background:var(--paper);flex-direction:column;gap:14px;transition:opacity .8s}
+  #loading .mark{font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:var(--ink-soft)}
+  #loading .bar{width:180px;height:1px;background:var(--hairline);overflow:hidden}
+  #loading .bar i{display:block;height:100%;width:40%;background:var(--ink);animation:sweep 1.2s infinite ease-in-out}
+  @keyframes sweep{0%{transform:translateX(-100%)}100%{transform:translateX(350%)}}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div class="vignette"></div><div class="grain"></div>
+
+<header>
+  <div class="title">
+    <h1>SportSim</h1>
+    <div class="sub">a chess engine for football — SAM 3 · symbolic dynamics · evolved parameters</div>
+  </div>
+  <nav>
+    <button data-view="board" class="active">Board</button>
+    <button data-view="film">Film</button>
+    <button data-view="evolution">Evolution</button>
+  </nav>
+</header>
+
+<div id="roster" class="panel"><h3>Pieces</h3><div id="rosterlist"></div></div>
+
+<div id="playercard" class="panel">
+  <h2 id="pcname">—</h2>
+  <div class="role" id="pcrole">—</div>
+  <div id="pcattrs"></div>
+  <div id="motifs"><h3>Behavioral Motifs</h3><div id="motiflist"></div></div>
+  <h3 style="margin-top:14px">Evolved Parameters</h3>
+  <div id="paramrows"></div>
+</div>
+
+<div id="film" class="view">
+  <div class="frame">
+    <video id="segvideo" controls loop muted playsinline src="./assets/segmentation.mp4"></video>
+    <div class="caption">
+      <span>SAM 3 promptable concept segmentation — «soccer player», «ball» — per-frame instances, Hungarian-associated tracks</span>
+      <span id="filmmeta"></span>
+    </div>
+  </div>
+</div>
+
+<div id="evolution" class="view">
+  <div class="charts">
+    <div class="chart wide" id="c-fitness">
+      <button class="tswitch" data-t="fittable">table</button>
+      <h3>Evolution of Predictive Fitness</h3>
+      <div class="note">CMA-ES per player · fitness = CV-normalized trajectory error + kinematic distribution match (lower is better; 1.0 = inertial-extrapolation parity)</div>
+      <div class="legend" id="fitlegend"></div>
+      <div id="fitchart"></div>
+      <div id="fittable" style="display:none"></div>
+    </div>
+    <div class="chart" id="c-tactics">
+      <h3>Counter-Strategy Search</h3>
+      <div class="note">tactical vector evolved against the frozen opponent model — territory + possession objective</div>
+      <div id="tacchart"></div>
+      <div id="tacmeters"></div>
+    </div>
+    <div class="chart" id="c-transfer">
+      <h3>Transfer Fit</h3>
+      <div class="note" id="transfernote">candidate integration scored by formation integrity + occupancy preservation</div>
+      <div id="transferlist"></div>
+    </div>
+    <div class="chart wide" id="c-shadow">
+      <h3>Shadow Divergence</h3>
+      <div class="note">mean distance between the engine's full-team simulation and reality, from kickoff of the clip</div>
+      <div id="divchart"></div>
+    </div>
+  </div>
+</div>
+
+<div id="transport">
+  <span class="mode active" data-mode="replay">Replay</span>
+  <span class="mode" data-mode="shadow">Shadow</span>
+  <span class="mode" data-mode="dream">Dream</span>
+  <button id="play">▶</button>
+  <input type="range" id="scrub" min="0" max="1000" value="0">
+  <span id="clock">0.0 s</span>
+  <span id="divergence"></span>
+</div>
+
+<div id="tooltip"></div>
+<footer id="attribution">match footage: Atlético de Madrid × Sevilla FC — Samsung España, CC BY 3.0 · segmentation: Meta SAM 3</footer>
+<div id="loading"><div class="mark">SportSim</div><div class="bar"><i></i></div></div>
+
+<script type="module" src="./main.js"></script>
+</body>
+</html>
