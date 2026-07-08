@@ -1,0 +1,2040 @@
+# =============================================================================
+# Training Taxonomy v2.0 — Methods Part 2
+# =============================================================================
+# Continuation of taxonomy_v2.yaml. Contains amrap, pyramid, emom, contrast,
+# and complex (the densest method with 3 families × 4 variants each).
+# Same schema and patterns as Part 1.
+# =============================================================================
+
+version: "2.0"
+parent_file: "taxonomy_v2.yaml"
+continuation_of_section: "methods"
+
+methods:
+
+  # ===========================================================================
+  # METHOD: AMRAP
+  # ===========================================================================
+
+  amrap:
+    id: amrap
+    name: "As Many Reps As Possible"
+    structure_modifier: output_target
+
+    intent_resolution:
+      candidates:
+        - intent: testing
+          condition: "target_rir == 0 AND state == 'executed'"
+        - intent: intensification
+          condition: "target_rir <= 1 AND load_pct_1rm >= 70"
+        - intent: density
+          condition: "variant == 'time_capped'"
+      default: testing
+
+    time_topology:
+      rest_intra_set_sec: null
+      rest_inter_set_sec:
+        range_canonical: { min: 180, max: 600 }
+        range_extended: { min: 120, max: 900 }
+        typical: 300
+
+    stopping_rule:
+      primary_criterion: failure_reached
+      threshold: "rir_estimated <= target_rir"
+      failure_action: continue_with_flag
+
+    validation_route:
+      inputs_required_by_state:
+        prescribed: [load_pct_1rm, target_rir, variant]
+        executed: [load_pct_1rm, target_rir, variant, reps_actual]
+        partial: [load_pct_1rm, target_rir, variant, reps_actual_at_interruption]
+      inputs_ignored: [reps_target]
+      validator_fn: validate_amrap
+      flags_specific:
+        - amrap_load_too_low
+        - amrap_load_too_high
+        - amrap_actual_below_expected
+        - amrap_actual_above_expected
+        - amrap_variant_params_inconsistent
+        - amrap_time_cap_missing
+        - amrap_rep_cap_missing
+        - amrap_exercise_count_invalid
+
+    exercise_count_rule:
+      min: 1
+      max: 1
+
+    zone_classification_rule:
+      strategy: first_continuous_effort
+      notes: |
+        In state=prescribed: pseudo_set uses epley_inverse(load) as expected reps.
+        In state=executed: pseudo_set uses reps_actual.
+
+    drift_rules:
+      - target_method: straight
+        conditions: ["variant == 'rep_capped'", "target_rir >= 3", "load_pct_1rm <= 70"]
+        severity: informational
+        suggestion: "Carga moderada con RIR alto sugiere straight con RIR declarado."
+
+    variants:
+      to_failure:
+        name: "AMRAP to failure"
+        family: null
+        defaults:
+          load_pct_1rm: 75
+          target_rir: 0
+          sets: 1
+          rest_inter_set_sec: 300
+        params_schema:
+          load_pct_1rm:
+            type: percent
+            range_canonical: { min: 60, max: 85 }
+            range_extended: { min: 50, max: 90 }
+            default: 75
+            required: true
+          target_rir:
+            type: integer
+            range_canonical: { min: 0, max: 0 }
+            range_extended: { min: 0, max: 0 }
+            default: 0
+            required: true
+          rest_inter_set_sec:
+            type: integer
+            range_canonical:
+              min: 120
+              max: 300
+            range_extended:
+              min: 90
+              max: 420
+            default: 300
+            required: true
+          sets:
+            type: integer
+            range_canonical:
+              min: 1
+              max: 3
+            range_extended:
+              min: 1
+              max: 5
+            default: 1
+            required: true
+        work_unit_extension: {}
+        work_unit_required_fields: [exercise_name, load_metric, target_rir]
+        work_unit_field_renames: {}
+        progression_logic: null
+
+      time_capped:
+        name: "Time-capped AMRAP"
+        family: null
+        defaults:
+          load_pct_1rm: 60
+          target_rir: 0
+          time_cap_sec: 60
+          sets: 1
+          rest_inter_set_sec: 240
+        params_schema:
+          load_pct_1rm:
+            type: percent
+            range_canonical: { min: 40, max: 75 }
+            range_extended: { min: 30, max: 80 }
+            default: 60
+            required: true
+          target_rir:
+            type: integer
+            range_canonical: { min: 0, max: 2 }
+            range_extended: { min: 0, max: 3 }
+            default: 0
+            required: true
+          time_cap_sec:
+            type: integer
+            range_canonical: { min: 30, max: 300 }
+            range_extended: { min: 20, max: 600 }
+            default: 60
+            required: true
+          target_pace_reps_per_min:
+            type: number
+            required: false
+          rest_inter_set_sec:
+            type: integer
+            range_canonical:
+              min: 120
+              max: 300
+            range_extended:
+              min: 90
+              max: 420
+            default: 240
+            required: true
+          sets:
+            type: integer
+            range_canonical:
+              min: 1
+              max: 3
+            range_extended:
+              min: 1
+              max: 5
+            default: 1
+            required: true
+        stopping_rule_override:
+          primary_criterion: time_elapsed
+          threshold: "time >= time_cap_sec OR rir_estimated <= target_rir"
+          failure_action: end_block
+        work_unit_extension: {}
+        work_unit_required_fields: [exercise_name, load_metric, time_cap_sec]
+        work_unit_field_renames: {}
+        progression_logic: null
+
+      rep_capped:
+        name: "Rep-capped AMRAP"
+        family: null
+        defaults:
+          load_pct_1rm: 70
+          target_rir: 1
+          rep_cap: 15
+          sets: 1
+          rest_inter_set_sec: 180
+        params_schema:
+          load_pct_1rm:
+            type: percent
+            range_canonical: { min: 60, max: 85 }
+            range_extended: { min: 50, max: 90 }
+            default: 70
+            required: true
+          target_rir:
+            type: integer
+            range_canonical: { min: 0, max: 3 }
+            range_extended: { min: 0, max: 4 }
+            default: 1
+            required: true
+          rep_cap:
+            type: integer
+            range_canonical: { min: 5, max: 30 }
+            range_extended: { min: 3, max: 50 }
+            default: 15
+            required: true
+          rest_inter_set_sec:
+            type: integer
+            range_canonical:
+              min: 120
+              max: 300
+            range_extended:
+              min: 90
+              max: 420
+            default: 180
+            required: true
+          sets:
+            type: integer
+            range_canonical:
+              min: 1
+              max: 3
+            range_extended:
+              min: 1
+              max: 5
+            default: 1
+            required: true
+        stopping_rule_override:
+          threshold: "rir_estimated <= target_rir OR reps_completed >= rep_cap"
+        work_unit_extension: {}
+        work_unit_required_fields: [exercise_name, load_metric, target_rir, rep_cap]
+        work_unit_field_renames: {}
+        progression_logic: null
+
+  # ===========================================================================
+  # METHOD: PYRAMID
+  # ===========================================================================
+
+  pyramid:
+    id: pyramid
+    name: "Pyramid"
+    structure_modifier: inter_set_load
+
+    intent_resolution:
+      candidates:
+        - intent: accumulation
+          condition: "variant == 'double' OR sets_count >= 5"
+        - intent: testing
+          condition: "variant == 'ascending' AND top_set_rir <= 1"
+        - intent: potentiation
+          condition: "variant == 'wave'"
+        - intent: quality
+          condition: "variant == 'descending' AND first_set_load_pct_1rm >= 85"
+      default: accumulation
+
+    time_topology:
+      rest_inter_set_sec:
+        range_canonical: { min: 150, max: 240 }
+        range_extended: { min: 120, max: 300 }
+        typical: 180
+
+    stopping_rule:
+      primary_criterion: reps_completed
+      threshold: "per-set declared"
+      failure_action: mark_incomplete
+
+    validation_route:
+      inputs_required_by_state:
+        prescribed: [variant, sets_count, load_progression, reps_progression]
+        executed: [variant, sets_count, load_progression, reps_progression, reps_actual_per_set, load_actual_per_set]
+        partial: [variant, sets_count, load_progression, reps_progression]
+      inputs_optional: [top_set_rir, deload_after_top]
+      validator_fn: validate_pyramid
+      flags_specific:
+        - pyramid_load_not_monotonic
+        - pyramid_inverse_relation_violated
+        - pyramid_top_set_outside_zone
+        - pyramid_total_volume_too_low
+        - pyramid_total_volume_too_high
+        - pyramid_variant_params_inconsistent
+        - pyramid_wave_count_inconsistent
+        - pyramid_exercise_count_invalid
+
+    exercise_count_rule:
+      min: 1
+      max: 1
+      exceptions: [multi_exercise_pyramid]
+
+    zone_classification_rule:
+      strategy: top_set
+      notes: |
+        For ascending/descending/wave: top_set = peak intensity set.
+        For double: uses dominant_component_distribution strategy instead.
+        For multi_exercise_pyramid: top_set applies across all exercises in the final round.
+      strategy_override_for_variant:
+        double: dominant_component_distribution
+
+    drift_rules:
+      - target_method: straight
+        conditions: ["variant == 'ascending'", "(last_set_load_pct - first_set_load_pct) < 10"]
+        severity: informational
+        suggestion: "Variación de carga <10% sugiere straight sets."
+
+    variants:
+      ascending:
+        name: "Ascending pyramid"
+        family: null
+        defaults:
+          sets_count: 4
+          first_set_load_pct_1rm: 60
+          last_set_load_pct_1rm: 90
+          first_set_reps: 12
+          last_set_reps: 3
+          load_progression: linear
+          reps_progression: linear
+          top_set_rir: 1
+          rest_inter_set_sec: 180
+        params_schema:
+          sets_count:
+            type: integer
+            range_canonical: { min: 3, max: 6 }
+            range_extended: { min: 3, max: 8 }
+            default: 4
+            required: true
+          first_set_load_pct_1rm:
+            type: percent
+            range_canonical: { min: 40, max: 75 }
+            range_extended: { min: 30, max: 80 }
+            default: 60
+            required: true
+          last_set_load_pct_1rm:
+            type: percent
+            range_canonical: { min: 80, max: 100 }
+            range_extended: { min: 75, max: 102 }
+            default: 90
+            required: true
+          first_set_reps:
+            type: integer
+            range_canonical: { min: 8, max: 15 }
+            range_extended: { min: 6, max: 20 }
+            default: 12
+            required: true
+          last_set_reps:
+            type: integer
+            range_canonical: { min: 1, max: 5 }
+            range_extended: { min: 1, max: 6 }
+            default: 3
+            required: true
+          load_progression:
+            type: enum
+            values: [linear, geometric, custom]
+            default: linear
+            required: true
+          top_set_rir:
+            type: integer
+            range_canonical: { min: 0, max: 3 }
+            range_extended: { min: 0, max: 4 }
+            default: 1
+            required: false
+          reps_progression:
+            type: enum
+            values: [linear, geometric, custom]
+            default: linear
+            required: true
+          rest_inter_set_sec:
+            type: integer
+            range_canonical:
+              min: 90
+              max: 240
+            range_extended:
+              min: 45
+              max: 420
+            default: 180
+            required: true
+        work_unit_extension: {}
+        work_unit_required_fields: [exercise_name, reps, load_metric]
+        work_unit_field_renames: {}
+        progression_logic: null
+
+      descending:
+        name: "Descending pyramid"
+        family: null
+        defaults:
+          sets_count: 4
+          first_set_load_pct_1rm: 88
+          last_set_load_pct_1rm: 65
+          first_set_reps: 4
+          last_set_reps: 12
+          load_progression: linear
+          reps_progression: linear
+          rest_inter_set_sec: 180
+        params_schema:
+          sets_count:
+            type: integer
+            range_canonical: { min: 3, max: 5 }
+            range_extended: { min: 3, max: 6 }
+            default: 4
+            required: true
+          first_set_load_pct_1rm:
+            type: percent
+            range_canonical: { min: 80, max: 95 }
+            range_extended: { min: 75, max: 100 }
+            default: 88
+            required: true
+          last_set_load_pct_1rm:
+            type: percent
+            range_canonical: { min: 55, max: 75 }
+            range_extended: { min: 50, max: 80 }
+            default: 65
+            required: true
+          first_set_reps:
+            type: integer
+            range_canonical: { min: 2, max: 6 }
+            range_extended: { min: 1, max: 8 }
+            default: 4
+            required: true
+          last_set_reps:
+            type: integer
+            range_canonical: { min: 8, max: 15 }
+            range_extended: { min: 6, max: 20 }
+            default: 12
+            required: true
+          load_progression:
+            type: enum
+            values: [linear, geometric, custom]
+            default: linear
+            required: true
+          reps_progression:
+            type: enum
+            values: [linear, geometric, custom]
+            default: linear
+            required: true
+          rest_inter_set_sec:
+            type: integer
+            range_canonical:
+              min: 90
+              max: 240
+            range_extended:
+              min: 45
+              max: 420
+            default: 180
+            required: true
+        work_unit_extension: {}
+        work_unit_required_fields: [exercise_name, reps, load_metric]
+        work_unit_field_renames: {}
+        progression_logic: null
+
+      double:
+        name: "Double pyramid"
+        family: null
+        defaults:
+          sets_count: 7
+          first_set_load_pct_1rm: 60
+          peak_load_pct_1rm: 85
+          first_set_reps: 12
+          peak_reps: 4
+          load_progression: linear
+          symmetric: true
+          rest_inter_set_sec: 180
+        params_schema:
+          sets_count:
+            type: integer
+            range_canonical: { min: 5, max: 9 }
+            range_extended: { min: 5, max: 11 }
+            default: 7
+            required: true
+            notes: "Must be odd for clear peak set."
+          first_set_load_pct_1rm:
+            type: percent
+            range_canonical: { min: 50, max: 70 }
+            range_extended: { min: 40, max: 75 }
+            default: 60
+            required: true
+          peak_load_pct_1rm:
+            type: percent
+            range_canonical: { min: 80, max: 92 }
+            range_extended: { min: 75, max: 95 }
+            default: 85
+            required: true
+          first_set_reps:
+            type: integer
+            range_canonical: { min: 8, max: 15 }
+            range_extended: { min: 6, max: 20 }
+            default: 12
+            required: true
+          peak_reps:
+            type: integer
+            range_canonical: { min: 2, max: 6 }
+            range_extended: { min: 1, max: 8 }
+            default: 4
+            required: true
+          symmetric:
+            type: boolean
+            default: true
+            required: true
+          load_progression:
+            type: enum
+            values: [linear, geometric, custom]
+            default: linear
+            required: true
+          rest_inter_set_sec:
+            type: integer
+            range_canonical:
+              min: 90
+              max: 240
+            range_extended:
+              min: 45
+              max: 420
+            default: 180
+            required: true
+        work_unit_extension: {}
+        work_unit_required_fields: [exercise_name, reps, load_metric]
+        work_unit_field_renames: {}
+        progression_logic: null
+
+      wave:
+        name: "Wave loading"
+        family: null
+        defaults:
+          waves_count: 3
+          sets_per_wave: 3
+          wave_pattern: [5, 3, 1]
+          first_wave_top_load_pct_1rm: 82
+          wave_load_increment_pct: 2.5
+          rest_inter_set_sec: 180
+          rest_inter_wave_sec: 240
+        params_schema:
+          waves_count:
+            type: integer
+            range_canonical: { min: 2, max: 4 }
+            range_extended: { min: 2, max: 5 }
+            default: 3
+            required: true
+          sets_per_wave:
+            type: integer
+            range_canonical: { min: 3, max: 3 }
+            range_extended: { min: 3, max: 3 }
+            default: 3
+            required: true
+          wave_pattern:
+            type: "array<integer>"
+            default: [5, 3, 1]
+            required: true
+          first_wave_top_load_pct_1rm:
+            type: percent
+            range_canonical: { min: 75, max: 88 }
+            range_extended: { min: 70, max: 92 }
+            default: 82
+            required: true
+          wave_load_increment_pct:
+            type: percent
+            range_canonical: { min: 1, max: 5 }
+            range_extended: { min: 0.5, max: 7 }
+            default: 2.5
+            required: true
+          rest_inter_wave_sec:
+            type: integer
+            range_canonical: { min: 180, max: 300 }
+            range_extended: { min: 120, max: 360 }
+            default: 240
+            required: true
+          rest_inter_set_sec:
+            type: integer
+            range_canonical:
+              min: 90
+              max: 240
+            range_extended:
+              min: 45
+              max: 420
+            default: 180
+            required: true
+        stopping_rule_override:
+          threshold: "set_failed OR bar_velocity_drop > 15%"
+        work_unit_extension: {}
+        work_unit_required_fields: [exercise_name, reps, load_metric]
+        work_unit_field_renames: {}
+        progression_logic: null
+
+      multi_exercise_pyramid:
+        name: "Multi-exercise pyramid"
+        family: null
+        description: >
+          Pyramid structure across multiple exercises. Each round uses
+          the same N exercises, with load increasing and reps decreasing
+          across rounds. Popular in powerbuilding and high-volume systems
+          (GVT-style with progression).
+        defaults:
+          rounds_count: 4
+          exercises_per_round: 3
+          first_round_load_pct_1rm: 65
+          last_round_load_pct_1rm: 85
+          first_round_reps: 10
+          last_round_reps: 4
+          load_progression: linear
+          rest_intra_round_sec: 30
+          rest_inter_round_sec: 180
+        params_schema:
+          rounds_count:
+            type: integer
+            range_canonical: { min: 3, max: 5 }
+            range_extended: { min: 2, max: 6 }
+            default: 4
+            required: true
+          exercises_per_round:
+            type: integer
+            range_canonical: { min: 2, max: 4 }
+            range_extended: { min: 2, max: 5 }
+            default: 3
+            required: true
+          first_round_load_pct_1rm:
+            type: percent
+            range_canonical: { min: 55, max: 70 }
+            range_extended: { min: 45, max: 75 }
+            default: 65
+            required: true
+          last_round_load_pct_1rm:
+            type: percent
+            range_canonical: { min: 80, max: 92 }
+            range_extended: { min: 75, max: 95 }
+            default: 85
+            required: true
+          first_round_reps:
+            type: integer
+            range_canonical: { min: 8, max: 12 }
+            range_extended: { min: 6, max: 15 }
+            default: 10
+            required: true
+          last_round_reps:
+            type: integer
+            range_canonical: { min: 3, max: 6 }
+            range_extended: { min: 2, max: 8 }
+            default: 4
+            required: true
+          load_progression:
+            type: enum
+            values: [linear, geometric, custom]
+            default: linear
+            required: true
+          rest_intra_round_sec:
+            type: integer
+            range_canonical: { min: 20, max: 60 }
+            range_extended: { min: 15, max: 90 }
+            default: 30
+            required: true
+          rest_inter_round_sec:
+            type: integer
+            range_canonical: { min: 120, max: 240 }
+            range_extended: { min: 90, max: 300 }
+            default: 180
+            required: true
+          exercises:
+            type: "array<exercise_ref>"
+            min_length: 2
+            max_length: 5
+            required: true
+        exercise_count_rule_for_exception:
+          min: 2
+          max: 5
+        work_unit_extension:
+          exercise_index_in_round: integer
+          round_index: integer
+        work_unit_required_fields:
+          - exercise_name
+          - reps
+          - load_metric
+          - exercise_index_in_round
+          - round_index
+        work_unit_field_renames:
+          reps: reps_per_set
+        progression_logic: null
+
+  # ===========================================================================
+  # METHOD: EMOM
+  # ===========================================================================
+
+  emom:
+    id: emom
+    name: "Every Minute On the Minute"
+    structure_modifier: time_box
+
+    intent_resolution:
+      candidates:
+        - intent: density
+          condition: "interval_sec <= 60 AND work_to_rest_ratio_estimated >= 0.6"
+        - intent: quality
+          condition: "interval_sec >= 90 AND work_to_rest_ratio_estimated <= 0.4"
+        - intent: accumulation
+          condition: "total_duration_min >= 15"
+        - intent: testing
+          condition: "variant == 'ascending_load'"
+      default: density
+
+    time_topology:
+      rest_inter_set_sec: null
+      interval_sec:
+        range_canonical: { min: 30, max: 120 }
+        range_extended: { min: 20, max: 240 }
+        typical: 60
+      total_duration_min:
+        range_canonical: { min: 6, max: 20 }
+        range_extended: { min: 4, max: 30 }
+        typical: 10
+
+    stopping_rule:
+      primary_criterion: time_elapsed
+      threshold: "elapsed >= total_duration_min OR set_failed"
+      failure_action: reduce_load_next_set
+
+    validation_route:
+      inputs_required_by_state:
+        prescribed: [variant, interval_sec, total_duration_min, work_per_interval]
+        executed: [variant, interval_sec, total_duration_min, work_per_interval, intervals_completed, reps_actual_per_interval]
+        partial: [variant, interval_sec, total_duration_min, work_per_interval, intervals_completed]
+      inputs_optional: [exercises_rotation, load_progression]
+      inputs_ignored: [rest_inter_set_sec]
+      validator_fn: validate_emom
+      flags_specific:
+        - emom_work_exceeds_interval
+        - emom_work_too_light_for_interval
+        - emom_interval_too_short
+        - emom_interval_too_long
+        - emom_duration_too_long
+        - emom_alternating_rotation_empty
+        - emom_variant_params_inconsistent
+        - emom_ascending_terminal_load_too_high
+        - emom_ascending_exceeds_1rm
+        - emom_collapsed_to_amrap_timecapped
+        - emom_exercise_count_invalid
+
+    exercise_count_rule:
+      min: 1
+      max: 1
+      exceptions: [alternating]
+
+    zone_classification_rule:
+      strategy: first_continuous_effort
+      notes: |
+        primary_unit = work_per_interval.
+      strategy_override_for_variant:
+        alternating: dominant_component_distribution
+        ascending_load: top_set
+
+    drift_rules:
+      - target_method: complex
+        target_variant: tabata
+        conditions:
+          - "interval_sec == 30"
+          - "work_per_interval.duration_sec == 20"
+          - "total_duration_min == 4"
+          - "len(exercises_rotation) <= 2"
+        severity: informational
+        suggestion: "Esquema canónico de tabata; considere complex/circuit/tabata."
+      - target_method: complex
+        target_variant: fixed_round_circuit
+        conditions:
+          - "len(exercises_rotation) >= 3"
+          - "interval_sec > 90"
+        severity: informational
+        suggestion: "Múltiples ejercicios con intervalos largos sugieren circuit."
+      - target_method: amrap
+        target_variant: time_capped
+        conditions:
+          - "total_duration_min * 60 / interval_sec == 1"
+        severity: informational
+        suggestion: "Un solo intervalo es funcionalmente AMRAP time_capped."
+
+    variants:
+      every_minute:
+        name: "Standard EMOM"
+        family: null
+        defaults:
+          interval_sec: 60
+          total_duration_min: 10
+          work_per_interval:
+            reps: 8
+            load_pct_1rm: 65
+          exercise_count: 1
+        params_schema:
+          interval_sec:
+            type: integer
+            range_canonical: { min: 60, max: 60 }
+            range_extended: { min: 60, max: 60 }
+            default: 60
+            required: true
+          total_duration_min:
+            type: integer
+            range_canonical: { min: 5, max: 20 }
+            range_extended: { min: 4, max: 25 }
+            default: 10
+            required: true
+          work_per_interval:
+            type: "object (work_unit-shaped)"
+            required: true
+          exercise_count:
+            type: integer
+            range_canonical:
+              min: 1
+              max: 1
+            range_extended:
+              min: 1
+              max: 2
+            default: 1
+            required: true
+        work_unit_extension: {}
+        work_unit_required_fields:
+          - exercise_name
+          - one_of: [reps, duration_sec, distance_m]
+          - load_metric
+        work_unit_field_renames: {}
+        progression_logic: null
+
+      every_n_seconds:
+        name: "EMOM with custom interval"
+        family: null
+        defaults:
+          interval_sec: 90
+          total_duration_min: 12
+          work_per_interval:
+            reps: 5
+            load_pct_1rm: 75
+        params_schema:
+          interval_sec:
+            type: integer
+            range_canonical: { min: 30, max: 180 }
+            range_extended: { min: 20, max: 240 }
+            default: 90
+            required: true
+          total_duration_min:
+            type: integer
+            range_canonical: { min: 4, max: 25 }
+            range_extended: { min: 4, max: 30 }
+            default: 12
+            required: true
+          work_per_interval:
+            type: "object (work_unit-shaped)"
+            required: true
+        work_unit_extension: {}
+        work_unit_required_fields:
+          - exercise_name
+          - one_of: [reps, duration_sec, distance_m]
+          - load_metric
+        work_unit_field_renames: {}
+        progression_logic: null
+
+      alternating:
+        name: "Alternating EMOM"
+        family: null
+        defaults:
+          interval_sec: 60
+          total_duration_min: 12
+          exercise_count: 2
+        params_schema:
+          interval_sec:
+            type: integer
+            range_canonical: { min: 30, max: 120 }
+            range_extended: { min: 20, max: 180 }
+            default: 60
+            required: true
+          total_duration_min:
+            type: integer
+            range_canonical: { min: 6, max: 25 }
+            range_extended: { min: 4, max: 30 }
+            default: 12
+            required: true
+          exercises_rotation:
+            type: "array<work_unit>"
+            min_length: 2
+            max_length: 4
+            required: true
+          exercise_count:
+            type: integer
+            range_canonical: { min: 2, max: 4 }
+            range_extended: { min: 2, max: 4 }
+            default: 2
+            required: true
+        exercise_count_rule_for_exception:
+          min: 2
+          max: 4
+        work_unit_extension: {}
+        work_unit_required_fields:
+          - exercise_name
+          - one_of: [reps, duration_sec, distance_m]
+          - load_metric
+        work_unit_field_renames: {}
+        progression_logic: null
+
+      ascending_load:
+        name: "EMOM with ascending load"
+        family: null
+        defaults:
+          interval_sec: 90
+          total_duration_min: 12
+          starting_load_pct_1rm: 70
+          load_increment_pct: 2.5
+          increment_every_n_intervals: 1
+          work_per_interval:
+            reps: 3
+        params_schema:
+          interval_sec:
+            type: integer
+            range_canonical: { min: 60, max: 180 }
+            range_extended: { min: 45, max: 240 }
+            default: 90
+            required: true
+          total_duration_min:
+            type: integer
+            range_canonical: { min: 8, max: 20 }
+            range_extended: { min: 6, max: 25 }
+            default: 12
+            required: true
+          starting_load_pct_1rm:
+            type: percent
+            range_canonical: { min: 60, max: 80 }
+            range_extended: { min: 50, max: 82 }
+            default: 70
+            required: true
+          load_increment_pct:
+            type: percent
+            range_canonical: { min: 1, max: 5 }
+            range_extended: { min: 0.5, max: 7 }
+            default: 2.5
+            required: true
+          increment_every_n_intervals:
+            type: integer
+            range_canonical: { min: 1, max: 3 }
+            range_extended: { min: 1, max: 5 }
+            default: 1
+            required: true
+          work_per_interval:
+            type: "object (work_unit-shaped)"
+            required: true
+        stopping_rule_override:
+          primary_criterion: rep_quality
+          threshold: "set_failed OR bar_velocity_drop > 20%"
+          failure_action: end_block
+        work_unit_extension: {}
+        work_unit_required_fields:
+          - exercise_name
+          - reps
+          - load_metric
+        work_unit_field_renames: {}
+        progression_logic: null
+
+  # ===========================================================================
+  # METHOD: CONTRAST
+  # ===========================================================================
+
+  contrast:
+    id: contrast
+    name: "Contrast / PAP"
+    structure_modifier: inter_set_pairing
+
+    intent_resolution:
+      candidates:
+        - intent: potentiation
+          condition: "heavy_load_pct >= 80 AND explosive_intent == 'max'"
+        - intent: quality
+          condition: "transition_rest_sec >= 60 AND total_pairs <= 5"
+        - intent: accumulation
+          condition: "total_pairs >= 6 OR variant == 'french_contrast'"
+      default: potentiation
+
+    time_topology:
+      rest_intra_pair_sec:
+        range_canonical: { min: 30, max: 60 }
+        range_extended: { min: 15, max: 90 }
+        typical: 45
+      rest_inter_pair_sec:
+        range_canonical: { min: 180, max: 300 }
+        range_extended: { min: 150, max: 360 }
+        typical: 240
+      rest_inter_chain_sec:
+        range_canonical: { min: 30, max: 90 }
+        range_extended: { min: 20, max: 120 }
+        typical: 60
+
+    stopping_rule:
+      primary_criterion: rep_quality
+      threshold: "explosive_velocity_drop > 10% OR heavy_velocity_drop > 15%"
+      failure_action: end_block
+
+    validation_route:
+      inputs_required_by_state:
+        prescribed: [variant, components, total_pairs, transition_rests]
+        executed: [variant, components, total_pairs, transition_rests, reps_actual_per_component_per_pair]
+        partial: [variant, components, total_pairs, transition_rests]
+      inputs_optional: [bar_velocity_targets, pap_window_sec]
+      validator_fn: validate_contrast
+      flags_specific:
+        - contrast_heavy_load_too_low
+        - contrast_heavy_load_too_high
+        - contrast_explosive_load_too_high
+        - contrast_transition_too_short
+        - contrast_transition_too_long
+        - contrast_components_same_pattern_violated
+        - contrast_variant_params_inconsistent
+        - contrast_pair_count_excessive
+        - french_contrast_components_count_wrong
+        - french_contrast_roles_order_wrong
+        - contrast_roles_inconsistent_with_variant
+        - contrast_exercise_count_invalid
+
+    exercise_count_rule:
+      min: 2
+      max: 4
+
+    zone_classification_rule:
+      strategy: first_continuous_effort
+      notes: "primary_unit = heavy component (reps_per_rep)"
+
+    drift_rules:
+      - target_method: complex
+        target_variant: single_load_chain
+        conditions:
+          - "components[0].load_metric == 'absolute_load'"
+          - "components[1].load_metric == 'absolute_load'"
+          - "components[0].load_value == components[1].load_value"
+        severity: informational
+        suggestion: "Cargas idénticas entre componentes sugieren single_load_chain."
+
+    variants:
+      heavy_light:
+        name: "Heavy-light contrast"
+        family: null
+        defaults:
+          total_pairs: 4
+          transition_rest_sec: 45
+          rest_inter_pair_sec: 240
+        params_schema:
+          total_pairs:
+            type: integer
+            range_canonical: { min: 3, max: 6 }
+            range_extended: { min: 2, max: 8 }
+            default: 4
+            required: true
+          transition_rest_sec:
+            type: integer
+            range_canonical: { min: 30, max: 60 }
+            range_extended: { min: 15, max: 90 }
+            default: 45
+            required: true
+          rest_inter_pair_sec:
+            type: integer
+            range_canonical: { min: 180, max: 300 }
+            range_extended: { min: 150, max: 360 }
+            default: 240
+            required: true
+          components:
+            type: "array<work_unit>"
+            min_length: 2
+            max_length: 2
+            required: true
+        exercise_count_rule_override:
+          min: 2
+          max: 2
+        work_unit_extension:
+          role: "enum [heavy, explosive]"
+        work_unit_required_fields: [exercise_name, reps, load_metric, role, intent]
+        work_unit_field_renames:
+          reps: reps_per_rep
+        progression_logic: null
+
+      french_contrast:
+        name: "French contrast"
+        family: null
+        defaults:
+          total_pairs: 3
+          transition_rest_sec: 30
+          rest_inter_chain_sec: 60
+          rest_inter_pair_sec: 300
+        params_schema:
+          total_pairs:
+            type: integer
+            range_canonical: { min: 2, max: 5 }
+            range_extended: { min: 2, max: 6 }
+            default: 3
+            required: true
+          transition_rest_sec:
+            type: integer
+            range_canonical: { min: 20, max: 60 }
+            range_extended: { min: 15, max: 75 }
+            default: 30
+            required: true
+          rest_inter_chain_sec:
+            type: integer
+            range_canonical: { min: 40, max: 90 }
+            range_extended: { min: 30, max: 120 }
+            default: 60
+            required: true
+          rest_inter_pair_sec:
+            type: integer
+            range_canonical: { min: 240, max: 360 }
+            range_extended: { min: 180, max: 420 }
+            default: 300
+            required: true
+          components:
+            type: "array<work_unit>"
+            min_length: 4
+            max_length: 4
+            required: true
+        exercise_count_rule_override:
+          min: 4
+          max: 4
+        work_unit_extension:
+          role: "enum [heavy_strength, heavy_plyo, loaded_explosive, unloaded_plyo]"
+        work_unit_required_fields: [exercise_name, reps, role, intent]
+        work_unit_field_renames:
+          reps: reps_per_rep
+        progression_logic: null
+
+      wave_contrast:
+        name: "Wave contrast"
+        family: null
+        defaults:
+          waves_count: 3
+          pairs_per_wave: 2
+          starting_heavy_load_pct: 80
+          wave_heavy_increment_pct: 3
+          transition_rest_sec: 45
+          rest_inter_pair_sec: 240
+          rest_inter_wave_sec: 300
+        params_schema:
+          waves_count:
+            type: integer
+            range_canonical: { min: 2, max: 4 }
+            range_extended: { min: 2, max: 5 }
+            default: 3
+            required: true
+          pairs_per_wave:
+            type: integer
+            range_canonical: { min: 2, max: 3 }
+            range_extended: { min: 2, max: 4 }
+            default: 2
+            required: true
+          starting_heavy_load_pct:
+            type: percent
+            range_canonical: { min: 75, max: 85 }
+            range_extended: { min: 70, max: 88 }
+            default: 80
+            required: true
+          wave_heavy_increment_pct:
+            type: percent
+            range_canonical: { min: 2, max: 5 }
+            range_extended: { min: 1, max: 6 }
+            default: 3
+            required: true
+          rest_inter_wave_sec:
+            type: integer
+            range_canonical: { min: 240, max: 360 }
+            range_extended: { min: 180, max: 420 }
+            default: 300
+            required: true
+          components:
+            type: "array<work_unit>"
+            min_length: 2
+            max_length: 2
+            required: true
+          rest_inter_pair_sec:
+            type: integer
+            range_canonical:
+              min: 180
+              max: 300
+            range_extended:
+              min: 150
+              max: 360
+            default: 240
+            required: true
+          transition_rest_sec:
+            type: integer
+            range_canonical:
+              min: 30
+              max: 60
+            range_extended:
+              min: 15
+              max: 90
+            default: 45
+            required: true
+        exercise_count_rule_override:
+          min: 2
+          max: 2
+        work_unit_extension:
+          role: "enum [heavy, explosive]"
+        work_unit_required_fields: [exercise_name, reps, role, intent]
+        work_unit_field_renames:
+          reps: reps_per_rep
+        progression_logic: null
+
+      complex_pairs:
+        name: "Reverse contrast (explosive primer)"
+        family: null
+        defaults:
+          total_pairs: 4
+          transition_rest_sec: 60
+          rest_inter_pair_sec: 240
+        params_schema:
+          total_pairs:
+            type: integer
+            range_canonical: { min: 3, max: 5 }
+            range_extended: { min: 2, max: 6 }
+            default: 4
+            required: true
+          transition_rest_sec:
+            type: integer
+            range_canonical: { min: 30, max: 90 }
+            range_extended: { min: 20, max: 120 }
+            default: 60
+            required: true
+          rest_inter_pair_sec:
+            type: integer
+            range_canonical: { min: 180, max: 300 }
+            range_extended: { min: 150, max: 360 }
+            default: 240
+            required: true
+          components:
+            type: "array<work_unit>"
+            min_length: 2
+            max_length: 2
+            required: true
+        exercise_count_rule_override:
+          min: 2
+          max: 2
+        work_unit_extension:
+          role: "enum [primer, heavy]"
+        work_unit_required_fields: [exercise_name, reps, role, intent]
+        work_unit_field_renames:
+          reps: reps_per_rep
+        progression_logic: null
+
+  # ===========================================================================
+  # METHOD: COMPLEX
+  # ===========================================================================
+
+  complex:
+    id: complex
+    name: "Complex / Circuit"
+    structure_modifier: inter_set_chaining
+
+    intent_resolution:
+      candidates:
+        - intent: technical
+          condition: "family == 'single_load_chain' AND variant == 'olympic_complex'"
+        - intent: accumulation
+          condition: "family == 'single_load_chain' AND variant == 'strongman_complex'"
+        - intent: density
+          condition: "family == 'circuit' OR (family == 'single_load_chain' AND variant IN ['kb_flow', 'mace_flow'])"
+        - intent: potentiation
+          condition: "family == 'independent_load_chain' AND giant_set_target_zone <= 'Z3'"
+      default: accumulation
+
+    time_topology:
+      rest_intra_component_sec:
+        range_canonical: { min: 0, max: 5 }
+        range_extended: { min: 0, max: 10 }
+        typical: 2
+      rest_inter_component_sec:
+        range_canonical: { min: 0, max: 60 }
+        range_extended: { min: 0, max: 90 }
+        typical: 0
+      rest_inter_round_sec:
+        range_canonical: { min: 90, max: 240 }
+        range_extended: { min: 60, max: 300 }
+        typical: 180
+
+    stopping_rule:
+      primary_criterion: rep_quality
+      threshold: "technique_failure OR rounds_completed"
+      failure_action: end_block
+
+    validation_route:
+      inputs_required_by_state:
+        prescribed: [variant, family, components, total_rounds]
+        executed: [variant, family, components, total_rounds, rounds_completed, work_units_completed]
+        partial: [variant, family, components, total_rounds, rounds_completed]
+      inputs_optional: [shared_load, target_pace_sec_per_round, target_total_duration_min]
+      validator_fn: validate_complex
+      validator_dispatcher: true
+      validator_dispatch_by: family
+      validator_family_fns:
+        single_load_chain: validate_single_load_chain
+        independent_load_chain: validate_independent_load_chain
+        circuit: validate_circuit
+      flags_specific:
+        # Common to all complex
+        - complex_variant_params_inconsistent
+        - complex_components_count_invalid
+        - complex_rounds_count_excessive
+        - complex_resembles_french_contrast
+        - complex_family_mismatch_with_variant
+        - complex_estimated_duration_excessive
+        - complex_estimated_duration_too_short
+        - complex_component_exercise_undeclared
+        - complex_exercise_count_invalid
+        # single_load_chain
+        - slc_load_exceeds_weakest_link
+        - slc_component_order_technically_unsafe
+        - slc_rest_between_components_too_long
+        - slc_components_have_independent_loads
+        - slc_load_metric_inappropriate_for_component
+        - slc_resembles_contrast_heavy_light
+        # independent_load_chain
+        - giant_set_load_progression_unusual
+        - giant_set_target_muscle_group_inconsistent
+        - pha_alternation_pattern_violated
+        - pha_body_segments_undeclared
+        - superset_resembles_contrast_heavy_light
+        # circuit
+        - circuit_component_work_metric_missing
+        - circuit_duration_mismatch_target
+        - tcc_rounds_too_few
+        - tcc_components_too_light
+        - tcc_target_rounds_mismatch_estimate
+        - chipper_reps_progression_unusual
+        - chipper_estimated_exceeds_cap
+        - chipper_estimated_duration_exhaustive
+        - tabata_load_too_high_for_duration
+        - complex_zone_spread_excessive
+        - complex_likely_misclassified_as_family
+
+    exercise_count_rule:
+      min: 2
+      max: 10
+
+    zone_classification_rule:
+      strategy: chain_complete
+      notes: |
+        Applies only when family == single_load_chain.
+        family == independent_load_chain uses dominant_component_distribution.
+        family == circuit uses energy_system_dominant.
+      strategy_override_for_family:
+        independent_load_chain: dominant_component_distribution
+        circuit: energy_system_dominant
+
+    drift_rules:
+      - target_method: contrast
+        target_variant: heavy_light
+        conditions:
+          - "variant == 'superset'"
+          - "components[0].movement_pattern == components[1].movement_pattern"
+          - "components[0].load_pct_1rm >= 80"
+          - "(components[1].load_pct_1rm <= 60 OR components[1].load_metric == 'bodyweight')"
+          - "rest_between_components_sec >= 15 AND rest_between_components_sec <= 90"
+        severity: informational
+        suggestion: "Estructura compatible con contrast/heavy_light. PAP probablemente es la intención."
+      - target_method: complex
+        target_variant: fixed_round_circuit
+        conditions:
+          - "variant == 'giant_set'"
+          - "len(unique(c.movement_pattern for c in components)) >= 3"
+          - "(target_muscle_group == 'full_body' OR target_muscle_group is null)"
+        severity: informational
+        suggestion: "Componentes diversos sugieren circuit, no giant_set."
+      - target_method: amrap
+        target_variant: time_capped
+        conditions:
+          - "variant == 'time_capped_circuit'"
+          - "len(components) == 1"
+        severity: structural_hard
+        suggestion: "Un solo componente sostenido por tiempo es amrap, no circuit."
+
+    variants:
+
+      # -----------------------------------------------------------------------
+      # FAMILY: single_load_chain
+      # -----------------------------------------------------------------------
+
+      olympic_complex:
+        name: "Olympic complex"
+        family: single_load_chain
+        defaults:
+          total_rounds: 4
+          shared_load_pct_1rm_of_weakest: 65
+          rest_inter_round_sec: 180
+          rest_between_components_sec: 2
+        params_schema:
+          total_rounds:
+            type: integer
+            range_canonical: { min: 3, max: 6 }
+            range_extended: { min: 2, max: 8 }
+            default: 4
+            required: true
+          shared_load_pct_1rm_of_weakest:
+            type: percent
+            range_canonical: { min: 55, max: 80 }
+            range_extended: { min: 50, max: 85 }
+            default: 65
+            required: true
+          # P7.3 — ancla declarada del eslabón débil: exercise id del componente al que
+          # el % de carga compartida está anclado. Opcional (null = no declarada). El
+          # motor de fuerza relativa (P7.2) computa el weakest real y, si difiere de esta
+          # ancla con confianza suficiente, emite slc_weakest_link_misidentified.
+          # Editor: input de texto (fallback v0.1); selector de componente = MARCA UI.
+          weakest_link_ref:
+            type: string
+            default: null
+            required: false
+          rest_inter_round_sec:
+            type: integer
+            range_canonical: { min: 120, max: 300 }
+            range_extended: { min: 90, max: 360 }
+            default: 180
+            required: true
+          rest_between_components_sec:
+            type: integer
+            range_canonical: { min: 0, max: 5 }
+            range_extended: { min: 0, max: 10 }
+            default: 2
+            required: true
+          components:
+            type: "array<work_unit>"
+            min_length: 3
+            max_length: 6
+            required: true
+        exercise_count_rule_override:
+          min: 3
+          max: 6
+        work_unit_extension:
+          technical_complexity_index: "integer (0-10) | null"
+        work_unit_required_fields: [exercise_name, reps, technical_complexity_index]
+        work_unit_field_renames:
+          reps: reps_per_component
+        work_unit_field_constraints:
+          load: shared_at_block_level
+        progression_logic: null
+
+      strongman_complex:
+        name: "Strongman / barbell complex"
+        family: single_load_chain
+        defaults:
+          total_rounds: 4
+          shared_load_pct_1rm_of_weakest: 45
+          rest_inter_round_sec: 180
+          rest_between_components_sec: 3
+        params_schema:
+          total_rounds:
+            type: integer
+            range_canonical: { min: 3, max: 6 }
+            range_extended: { min: 2, max: 8 }
+            default: 4
+            required: true
+          shared_load_pct_1rm_of_weakest:
+            type: percent
+            range_canonical: { min: 30, max: 60 }
+            range_extended: { min: 25, max: 70 }
+            default: 45
+            required: true
+          rest_inter_round_sec:
+            type: integer
+            range_canonical: { min: 120, max: 300 }
+            range_extended: { min: 90, max: 360 }
+            default: 180
+            required: true
+          rest_between_components_sec:
+            type: integer
+            range_canonical: { min: 0, max: 5 }
+            range_extended: { min: 0, max: 10 }
+            default: 3
+            required: true
+          components:
+            type: "array<work_unit>"
+            min_length: 3
+            max_length: 6
+            required: true
+        exercise_count_rule_override:
+          min: 3
+          max: 6
+        work_unit_extension:
+          technical_complexity_index: "integer (0-10) | null"
+        work_unit_required_fields: [exercise_name, reps, technical_complexity_index]
+        work_unit_field_renames:
+          reps: reps_per_component
+        work_unit_field_constraints:
+          load: shared_at_block_level
+        progression_logic: null
+
+      kb_flow:
+        name: "Kettlebell flow"
+        family: single_load_chain
+        defaults:
+          total_rounds: 4
+          shared_load_kg: 24
+          shared_load_metric: absolute_load
+          rest_inter_round_sec: 120
+          rest_between_components_sec: 0
+        params_schema:
+          total_rounds:
+            type: integer
+            range_canonical: { min: 3, max: 5 }
+            range_extended: { min: 2, max: 6 }
+            default: 4
+            required: true
+          shared_load_kg:
+            type: number
+            range_canonical: { min: 12, max: 32 }
+            range_extended: { min: 8, max: 48 }
+            default: 24
+            required: true
+          rest_inter_round_sec:
+            type: integer
+            range_canonical: { min: 60, max: 180 }
+            range_extended: { min: 45, max: 240 }
+            default: 120
+            required: true
+          rest_between_components_sec:
+            type: integer
+            range_canonical: { min: 0, max: 5 }
+            range_extended: { min: 0, max: 8 }
+            default: 0
+            required: true
+          components:
+            type: "array<work_unit>"
+            min_length: 3
+            max_length: 8
+            required: true
+          shared_load_metric:
+            type: enum
+            values: [absolute_load, pct_1rm_of_weakest, rpe_anchor]
+            default: absolute_load
+            required: true
+        exercise_count_rule_override:
+          min: 3
+          max: 8
+        work_unit_extension: {}
+        work_unit_required_fields: [exercise_name, reps]
+        work_unit_field_renames:
+          reps: reps_per_component
+        work_unit_field_constraints:
+          load: shared_at_block_level
+        progression_logic: null
+
+      mace_flow:
+        name: "Mace / club flow"
+        family: single_load_chain
+        defaults:
+          total_rounds: 4
+          shared_load_kg: 10
+          shared_load_metric: absolute_load
+          rest_inter_round_sec: 90
+          rest_between_components_sec: 0
+        params_schema:
+          total_rounds:
+            type: integer
+            range_canonical: { min: 3, max: 5 }
+            range_extended: { min: 2, max: 6 }
+            default: 4
+            required: true
+          shared_load_kg:
+            type: number
+            range_canonical: { min: 7, max: 12 }
+            range_extended: { min: 4, max: 18 }
+            default: 10
+            required: true
+          rest_inter_round_sec:
+            type: integer
+            range_canonical: { min: 60, max: 150 }
+            range_extended: { min: 45, max: 180 }
+            default: 90
+            required: true
+          rest_between_components_sec:
+            type: integer
+            range_canonical: { min: 0, max: 5 }
+            range_extended: { min: 0, max: 8 }
+            default: 0
+            required: true
+          components:
+            type: "array<work_unit>"
+            min_length: 3
+            max_length: 8
+            required: true
+          shared_load_metric:
+            type: enum
+            values: [absolute_load, pct_1rm_of_weakest, rpe_anchor]
+            default: absolute_load
+            required: true
+        exercise_count_rule_override:
+          min: 3
+          max: 8
+        work_unit_extension: {}
+        work_unit_required_fields: [exercise_name, reps]
+        work_unit_field_renames:
+          reps: reps_per_component
+        work_unit_field_constraints:
+          load: shared_at_block_level
+        progression_logic: null
+
+      # -----------------------------------------------------------------------
+      # FAMILY: independent_load_chain
+      # -----------------------------------------------------------------------
+
+      giant_set:
+        name: "Giant set"
+        family: independent_load_chain
+        defaults:
+          total_rounds: 3
+          rest_inter_round_sec: 180
+          rest_between_components_sec: 10
+        params_schema:
+          total_rounds:
+            type: integer
+            range_canonical: { min: 2, max: 4 }
+            range_extended: { min: 2, max: 5 }
+            default: 3
+            required: true
+          rest_inter_round_sec:
+            type: integer
+            range_canonical: { min: 120, max: 240 }
+            range_extended: { min: 90, max: 300 }
+            default: 180
+            required: true
+          rest_between_components_sec:
+            type: integer
+            range_canonical: { min: 0, max: 30 }
+            range_extended: { min: 0, max: 60 }
+            default: 10
+            required: true
+          target_muscle_group:
+            # Promovido string -> enum (hallazgo Prescriptor v0.1): vocabulario
+            # controlado = 22 muscle_groups (catalogo/landmarks C.3) + full_body
+            # (valor legal usado por la drift rule giant_set->circuit)
+            type: enum
+            values: [quadriceps, hamstrings, glutes, adductors, abductors, calves, hip_flexors, pectorals, anterior_deltoid, lateral_deltoid, posterior_deltoid, triceps, lats, upper_back, biceps, forearms, abdominals, obliques, spinal_erectors, lower_back, neck, rotator_cuff, full_body]
+            required: true
+          components:
+            type: "array<work_unit>"
+            min_length: 4
+            max_length: 6
+            required: true
+        exercise_count_rule_override:
+          min: 4
+          max: 6
+        work_unit_extension:
+          body_segment: "enum [upper, lower, core, full]"
+          movement_pattern: "string | null"
+        work_unit_required_fields: [exercise_name, reps, load_metric, body_segment]
+        work_unit_field_renames:
+          reps: reps_per_component
+        progression_logic: null
+
+      accessory_complex:
+        name: "Accessory complex"
+        family: independent_load_chain
+        defaults:
+          total_rounds: 3
+          rest_inter_round_sec: 90
+          rest_between_components_sec: 45
+        params_schema:
+          total_rounds:
+            type: integer
+            range_canonical: { min: 2, max: 4 }
+            range_extended: { min: 2, max: 5 }
+            default: 3
+            required: true
+          rest_inter_round_sec:
+            type: integer
+            range_canonical: { min: 60, max: 120 }
+            range_extended: { min: 45, max: 150 }
+            default: 90
+            required: true
+          rest_between_components_sec:
+            type: integer
+            range_canonical: { min: 30, max: 90 }
+            range_extended: { min: 15, max: 120 }
+            default: 45
+            required: true
+          components:
+            type: "array<work_unit>"
+            min_length: 3
+            max_length: 5
+            required: true
+        exercise_count_rule_override:
+          min: 3
+          max: 5
+        work_unit_extension:
+          body_segment: "enum [upper, lower, core, full]"
+          movement_pattern: "string | null"
+        work_unit_required_fields: [exercise_name, reps, load_metric, body_segment]
+        work_unit_field_renames:
+          reps: reps_per_component
+        progression_logic: null
+
+      peripheral_heart_action:
+        name: "Peripheral heart action (PHA)"
+        family: independent_load_chain
+        defaults:
+          total_rounds: 3
+          rest_inter_round_sec: 90
+          rest_between_components_sec: 30
+          alternation_pattern: strict_upper_lower
+        params_schema:
+          total_rounds:
+            type: integer
+            range_canonical: { min: 2, max: 4 }
+            range_extended: { min: 2, max: 5 }
+            default: 3
+            required: true
+          rest_inter_round_sec:
+            type: integer
+            range_canonical: { min: 60, max: 120 }
+            range_extended: { min: 45, max: 150 }
+            default: 90
+            required: true
+          rest_between_components_sec:
+            type: integer
+            range_canonical: { min: 15, max: 60 }
+            range_extended: { min: 10, max: 90 }
+            default: 30
+            required: true
+          alternation_pattern:
+            type: enum
+            values: [strict_upper_lower, push_pull_lower, custom]
+            default: strict_upper_lower
+            required: true
+          components:
+            type: "array<work_unit>"
+            min_length: 5
+            max_length: 8
+            required: true
+        exercise_count_rule_override:
+          min: 5
+          max: 8
+        work_unit_extension:
+          body_segment: "enum [upper, lower, core, full]"
+          movement_pattern: "string | null"
+        work_unit_required_fields: [exercise_name, reps, load_metric, body_segment]
+        work_unit_field_renames:
+          reps: reps_per_component
+        progression_logic: null
+
+      superset:
+        name: "Superset"
+        family: independent_load_chain
+        defaults:
+          total_rounds: 4
+          rest_inter_round_sec: 90
+          rest_between_components_sec: 10
+        params_schema:
+          total_rounds:
+            type: integer
+            range_canonical: { min: 3, max: 5 }
+            range_extended: { min: 2, max: 6 }
+            default: 4
+            required: true
+          rest_inter_round_sec:
+            type: integer
+            range_canonical: { min: 60, max: 120 }
+            range_extended: { min: 45, max: 180 }
+            default: 90
+            required: true
+          rest_between_components_sec:
+            type: integer
+            range_canonical: { min: 0, max: 30 }
+            range_extended: { min: 0, max: 60 }
+            default: 10
+            required: true
+          components:
+            type: "array<work_unit>"
+            min_length: 2
+            max_length: 2
+            required: true
+        exercise_count_rule_override:
+          min: 2
+          max: 2
+        work_unit_extension:
+          body_segment: "enum [upper, lower, core, full]"
+          movement_pattern: "string | null"
+        work_unit_required_fields: [exercise_name, reps, load_metric, body_segment]
+        work_unit_field_renames:
+          reps: reps_per_component
+        progression_logic: null
+
+      antagonist_giant_set:
+        name: "Antagonist giant set"
+        family: independent_load_chain
+        description: >
+          4-6 ejercicios organizados en pares antagónicos. Cada par alterna
+          componentes con grupos musculares opuestos para permitir descanso
+          local mientras el antagonista trabaja. Volumen doble vs giant_set
+          estándar en el mismo tiempo total. Popular en bodybuilding y
+          entrenamiento de hipertrofia con tiempo limitado.
+        defaults:
+          total_rounds: 3
+          pairs_count: 2
+          rest_intra_pair_sec: 15
+          rest_inter_pair_sec: 60
+          rest_inter_round_sec: 120
+        params_schema:
+          total_rounds:
+            type: integer
+            range_canonical: { min: 2, max: 4 }
+            range_extended: { min: 2, max: 5 }
+            default: 3
+            required: true
+          pairs_count:
+            type: integer
+            range_canonical: { min: 2, max: 3 }
+            range_extended: { min: 2, max: 3 }
+            default: 2
+            required: true
+          rest_intra_pair_sec:
+            type: integer
+            range_canonical: { min: 10, max: 30 }
+            range_extended: { min: 5, max: 45 }
+            default: 15
+            required: true
+          rest_inter_pair_sec:
+            type: integer
+            range_canonical: { min: 45, max: 90 }
+            range_extended: { min: 30, max: 120 }
+            default: 60
+            required: true
+          rest_inter_round_sec:
+            type: integer
+            range_canonical: { min: 90, max: 180 }
+            range_extended: { min: 60, max: 240 }
+            default: 120
+            required: true
+          components:
+            type: "array<work_unit>"
+            min_length: 4
+            max_length: 6
+            required: true
+        exercise_count_rule_override:
+          min: 4
+          max: 6
+        work_unit_extension:
+          body_segment: "enum [upper, lower, core, full]"
+          movement_pattern: "string | null"
+          pair_index: "integer"
+          role_in_pair: "enum [agonist, antagonist]"
+        work_unit_required_fields:
+          - exercise_name
+          - reps
+          - load_metric
+          - body_segment
+          - pair_index
+          - role_in_pair
+        work_unit_field_renames:
+          reps: reps_per_component
+        progression_logic: null
+
+      # -----------------------------------------------------------------------
+      # FAMILY: circuit
+      # -----------------------------------------------------------------------
+
+      fixed_round_circuit:
+        name: "Fixed round circuit"
+        family: circuit
+        defaults:
+          total_rounds: 4
+          rest_between_components_sec: 0
+          rest_inter_round_sec: 60
+          target_total_duration_min: 15
+        params_schema:
+          total_rounds:
+            type: integer
+            range_canonical: { min: 3, max: 6 }
+            range_extended: { min: 2, max: 8 }
+            default: 4
+            required: true
+          rest_between_components_sec:
+            type: integer
+            range_canonical: { min: 0, max: 15 }
+            range_extended: { min: 0, max: 30 }
+            default: 0
+            required: true
+          rest_inter_round_sec:
+            type: integer
+            range_canonical: { min: 30, max: 180 }
+            range_extended: { min: 15, max: 240 }
+            default: 60
+            required: true
+          target_total_duration_min:
+            type: integer
+            range_canonical: { min: 8, max: 30 }
+            range_extended: { min: 5, max: 45 }
+            default: 15
+            required: false
+          components:
+            type: "array<work_unit>"
+            min_length: 3
+            max_length: 8
+            required: true
+        exercise_count_rule_override:
+          min: 3
+          max: 8
+        work_unit_extension:
+          body_segment: "enum [upper, lower, core, full]"
+        work_unit_required_fields:
+          - exercise_name
+          - one_of: [reps, duration_sec, distance_m]
+          - load_metric
+          - body_segment
+        work_unit_field_renames:
+          reps: reps_per_component
+        progression_logic: null
+
+      time_capped_circuit:
+        name: "Time-capped circuit (AMRAP multi-ejercicio)"
+        family: circuit
+        defaults:
+          time_cap_min: 20
+          rest_between_components_sec: 0
+        params_schema:
+          time_cap_min:
+            type: integer
+            range_canonical: { min: 8, max: 30 }
+            range_extended: { min: 5, max: 40 }
+            default: 20
+            required: true
+          rest_between_components_sec:
+            type: integer
+            range_canonical: { min: 0, max: 15 }
+            range_extended: { min: 0, max: 30 }
+            default: 0
+            required: true
+          target_rounds:
+            type: integer
+            required: false
+          components:
+            type: "array<work_unit>"
+            min_length: 3
+            max_length: 5
+            required: true
+        exercise_count_rule_override:
+          min: 3
+          max: 5
+        stopping_rule_override:
+          primary_criterion: time_elapsed
+          threshold: "elapsed >= time_cap_min"
+          failure_action: end_block
+        work_unit_extension:
+          body_segment: "enum [upper, lower, core, full]"
+        work_unit_required_fields:
+          - exercise_name
+          - one_of: [reps, duration_sec, distance_m]
+          - load_metric
+          - body_segment
+        work_unit_field_renames:
+          reps: reps_per_component
+        progression_logic: null
+
+      chipper:
+        name: "Chipper"
+        family: circuit
+        defaults:
+          time_cap_min: null
+          rest_allowed: true
+        params_schema:
+          time_cap_min:
+            type: integer
+            range_canonical: { min: 15, max: 45 }
+            range_extended: { min: 10, max: 60 }
+            required: false
+          rest_allowed:
+            type: boolean
+            default: true
+            required: true
+          components:
+            type: "array<work_unit>"
+            min_length: 4
+            max_length: 10
+            required: true
+        exercise_count_rule_override:
+          min: 4
+          max: 10
+        stopping_rule_override:
+          primary_criterion: reps_completed
+          threshold: "all_components_completed OR time_cap_reached"
+          failure_action: continue_with_flag
+        work_unit_extension:
+          body_segment: "enum [upper, lower, core, full]"
+        work_unit_required_fields:
+          - exercise_name
+          - one_of: [reps, duration_sec, distance_m]
+          - load_metric
+          - body_segment
+        work_unit_field_renames:
+          reps: reps_per_component
+        progression_logic: null
+
+      tabata:
+        name: "Tabata protocol"
+        family: circuit
+        defaults:
+          rounds: 8
+          work_sec: 20
+          rest_sec: 10
+          total_duration_min: 4
+        params_schema:
+          rounds:
+            type: integer
+            range_canonical: { min: 8, max: 8 }
+            range_extended: { min: 6, max: 10 }
+            default: 8
+            required: true
+          work_sec:
+            type: integer
+            range_canonical: { min: 20, max: 20 }
+            range_extended: { min: 15, max: 30 }
+            default: 20
+            required: true
+          rest_sec:
+            type: integer
+            range_canonical: { min: 10, max: 10 }
+            range_extended: { min: 5, max: 15 }
+            default: 10
+            required: true
+          total_duration_min:
+            type: integer
+            range_canonical: { min: 4, max: 4 }
+            range_extended: { min: 3, max: 5 }
+            default: 4
+            required: true
+          components:
+            type: "array<work_unit>"
+            min_length: 1
+            max_length: 2
+            required: true
+        exercise_count_rule_override:
+          min: 1
+          max: 2
+        stopping_rule_override:
+          primary_criterion: time_elapsed
+          threshold: "rounds_completed == 8 OR set_failed"
+          failure_action: end_block
+        work_unit_extension:
+          body_segment: "enum [upper, lower, core, full]"
+        work_unit_required_fields:
+          - exercise_name
+          - one_of: [reps, duration_sec]
+          - load_metric
+          - body_segment
+        work_unit_field_renames:
+          reps: reps_per_round
+        progression_logic: null

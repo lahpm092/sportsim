@@ -1,0 +1,633 @@
+# =============================================================================
+# Drift Rules Catalog — Training Taxonomy v2.0
+# =============================================================================
+# Companion to: taxonomy_v2.yaml, flag_catalog.yaml, validator_functions_spec.md
+#
+# All drift detection rules in the v2 system. The drift engine
+# (detect_drift in validator_functions_spec.md, Group 5) reads these
+# rules and evaluates conditions against block state. When all conditions
+# of a rule evaluate true, the engine emits a flag suggesting an
+# alternative method/variant.
+#
+# Structure per rule:
+#   - origin_method, origin_variant     (where the rule applies)
+#   - target_method, target_variant     (what method is being suggested)
+#   - conditions                        (list of boolean expressions, all must be true)
+#   - severity                          (informational | structural_hard)
+#   - flag_id                           (generated flag identifier)
+#   - suggestion                        (human-readable explanation)
+#   - notes                             (rationale / context)
+#
+# Drift is directional, not symmetric (A.9.4.6). Each direction is a separate rule.
+#
+# Condition language (A.9.9.4):
+#   Operators: < <= > >= == != IN NOT_IN
+#   Logical:   AND OR NOT (with parentheses)
+#   Functions: len(), mean(), mode(), sum(), count(), unique()
+#   Paths:     dotted, with array indexing: components[0].load_pct_1rm
+#   Hooks:     fn:function_name to invoke validator functions
+# =============================================================================
+
+version: "2.0"
+parent: "taxonomy_v2.yaml"
+
+# =============================================================================
+# RULES BY ORIGIN METHOD
+# =============================================================================
+
+drift_rules:
+
+  # ---------------------------------------------------------------------------
+  # ORIGIN: straight
+  # ---------------------------------------------------------------------------
+
+  straight:
+
+    - id: straight_resembles_amrap_rep_capped
+      origin_method: straight
+      origin_variant: default
+      target_method: amrap
+      target_variant: rep_capped
+      conditions:
+        - "rir_target >= 3"
+        - "reps_target >= 12"
+        - "load_pct_1rm <= 70"
+      severity: informational
+      suggestion: "Straight with high RIR target and many reps resembles amrap/rep_capped. If reps are output (stop at RIR), use rep_capped."
+      notes: "Frontier with amrap/rep_capped clarified in A.4.7."
+
+  # ---------------------------------------------------------------------------
+  # ORIGIN: cluster
+  # ---------------------------------------------------------------------------
+
+  cluster:
+
+    - id: cluster_resembles_rest_pause
+      origin_method: cluster
+      origin_variant: rest_pause_style
+      target_method: rest_pause
+      target_variant: myo_reps
+      conditions:
+        - "rest_intra_set_sec < 15"
+        - "load_pct_1rm < 70"
+        - "reps_per_cluster >= 4"
+      severity: informational
+      suggestion: "Las características sugieren rest_pause/myo_reps. Si la intención es llegar al fallo en cada mini-tanda, use rest_pause."
+      notes: "Frontier between cluster/rest_pause_style and rest_pause (A.1.1, A.3.1)."
+
+    - id: cluster_singles_resembles_emom_every_n_seconds
+      origin_method: cluster
+      origin_variant: singles
+      target_method: emom
+      target_variant: every_n_seconds
+      conditions:
+        - "rest_intra_set_sec >= 15"
+        - "rest_intra_set_sec <= 30"
+        - "clusters_per_set >= 5"
+      severity: informational
+      suggestion: "Singles con descansos consistentes podrían modelarse como EMOM con interval corto."
+      notes: "Marginal case; both methods can express this. EMOM enforces stricter timing."
+
+  # ---------------------------------------------------------------------------
+  # ORIGIN: drop
+  # ---------------------------------------------------------------------------
+
+  drop:
+
+    - id: drop_resembles_rest_pause
+      origin_method: drop
+      origin_variant: descending
+      target_method: rest_pause
+      target_variant: myo_reps
+      conditions:
+        - "drop_pct_per_drop < 10"
+        - "rest_between_drops_sec > 15"
+      severity: informational
+      suggestion: "Cambios pequeños de carga con descansos largos sugieren rest_pause. Drop pequeño se parece a misma carga."
+      notes: "Frontier A.2.6: drop vs rest_pause distinction."
+
+    - id: drop_double_resembles_rest_pause_dc
+      origin_method: drop
+      origin_variant: double_drop
+      target_method: rest_pause
+      target_variant: dc_style
+      conditions:
+        - "drop_pct_per_drop < 15"
+        - "rest_between_drops_sec >= 10"
+      severity: informational
+      suggestion: "Pequeños drops con descansos largos sugieren dc_style rest_pause."
+      notes: "Marginal case; user should choose based on intent."
+
+  # ---------------------------------------------------------------------------
+  # ORIGIN: rest_pause
+  # ---------------------------------------------------------------------------
+
+  rest_pause:
+
+    - id: rest_pause_resembles_cluster
+      origin_method: rest_pause
+      origin_variant: myo_reps
+      target_method: cluster
+      target_variant: rest_pause_style
+      conditions:
+        - "rest_intra_set_sec > 25"
+        - "activation_rir >= 2"
+      severity: informational
+      suggestion: "Descanso largo + no llegar al fallo sugiere cluster con descansos cortos."
+      notes: "Frontier rest_pause ↔ cluster (A.3.1, A.1.1). Bidirectional with cluster_resembles_rest_pause."
+
+  # ---------------------------------------------------------------------------
+  # ORIGIN: amrap
+  # ---------------------------------------------------------------------------
+
+  amrap:
+
+    - id: amrap_resembles_straight
+      origin_method: amrap
+      origin_variant: rep_capped
+      target_method: straight
+      target_variant: default
+      conditions:
+        - "target_rir >= 3"
+        - "load_pct_1rm <= 70"
+      severity: informational
+      suggestion: "Carga moderada con RIR alto sugiere straight con RIR declarado."
+      notes: "Frontier A.4.7. If user consistently reaches rep_cap before RIR, use straight."
+
+    - id: amrap_acted_as_straight
+      origin_method: amrap
+      origin_variant: rep_capped
+      target_method: straight
+      target_variant: default
+      conditions:
+        - "state == 'executed'"
+        - "reps_actual == rep_cap"
+      severity: informational
+      suggestion: "Repeatedly reaching rep_cap before target RIR means functionally straight."
+      notes: "Post-hoc retrospective drift. Only fires when block is in executed state."
+
+  # ---------------------------------------------------------------------------
+  # ORIGIN: pyramid
+  # ---------------------------------------------------------------------------
+
+  pyramid:
+
+    - id: pyramid_resembles_straight
+      origin_method: pyramid
+      origin_variant: ascending
+      target_method: straight
+      target_variant: default
+      conditions:
+        - "(last_set_load_pct_1rm - first_set_load_pct_1rm) < 10"
+      severity: informational
+      suggestion: "Variación de carga <10% sugiere straight sets."
+      notes: "Frontier A.5.6. Very small load variance is functionally straight with minor adjustments."
+
+    - id: pyramid_double_resembles_giant_set
+      origin_method: pyramid
+      origin_variant: double
+      target_method: complex
+      target_variant: giant_set
+      conditions:
+        - "sets_count >= 7"
+        - "peak_load_pct_1rm < 80"
+      severity: informational
+      suggestion: "Double pyramid con peak moderado y muchos sets se parece a giant_set por volumen."
+      notes: "Marginal case. Pyramid focuses on variation; giant_set on saturation."
+
+    - id: multi_exercise_pyramid_resembles_fixed_round_circuit
+      origin_method: pyramid
+      origin_variant: multi_exercise_pyramid
+      target_method: complex
+      target_variant: fixed_round_circuit
+      conditions:
+        - "(last_round_load_pct_1rm - first_round_load_pct_1rm) < 10"
+      severity: informational
+      suggestion: "Cargas casi estables entre rondas sugieren circuit/fixed_round_circuit. Pyramid requiere progresión de carga clara."
+      notes: "Frontier 7 from A.8.9. When load progression is minimal, the multi-exercise pyramid is functionally a fixed-round circuit."
+
+  # ---------------------------------------------------------------------------
+  # ORIGIN: emom
+  # ---------------------------------------------------------------------------
+
+  emom:
+
+    - id: emom_resembles_tabata
+      origin_method: emom
+      origin_variant: every_minute
+      target_method: complex
+      target_variant: tabata
+      conditions:
+        - "interval_sec == 30"
+        - "work_per_interval.duration_sec == 20"
+        - "total_duration_min == 4"
+        - "len(exercises_rotation) <= 2"
+      severity: informational
+      suggestion: "Esquema canónico de tabata; considere complex/circuit/tabata para etiquetado explícito."
+      notes: "Frontier A.6.5. Tabata is structurally a specific EMOM but semantically distinct."
+
+    - id: emom_alternating_resembles_fixed_round_circuit
+      origin_method: emom
+      origin_variant: alternating
+      target_method: complex
+      target_variant: fixed_round_circuit
+      conditions:
+        - "len(exercises_rotation) >= 3"
+        - "interval_sec > 90"
+      severity: informational
+      suggestion: "Múltiples ejercicios con intervalos largos sugieren circuit/fixed_round_circuit."
+      notes: "Frontier A.6 / A.8.6. Long intervals + many exercises = more circuit-like."
+
+    - id: emom_collapsed_to_amrap_timecapped
+      origin_method: emom
+      origin_variant: every_minute
+      target_method: amrap
+      target_variant: time_capped
+      conditions:
+        - "(total_duration_min * 60 / interval_sec) == 1"
+      severity: informational
+      suggestion: "Un solo intervalo es funcionalmente AMRAP time_capped."
+      notes: "Edge case: when total duration equals one interval, EMOM degenerates to time-capped AMRAP."
+
+    - id: emom_ascending_resembles_pyramid_ascending
+      origin_method: emom
+      origin_variant: ascending_load
+      target_method: pyramid
+      target_variant: ascending
+      conditions:
+        - "interval_sec > 120"
+        - "(increment_every_n_intervals * interval_sec) > 180"
+      severity: informational
+      suggestion: "Intervalos largos con incrementos por minuto se parecen a pyramid ascending. Pyramid permite mejor descanso entre sets."
+      notes: "Borderline. EMOM enforces timing rigidly; pyramid allows recovery."
+
+  # ---------------------------------------------------------------------------
+  # ORIGIN: contrast
+  # ---------------------------------------------------------------------------
+
+  contrast:
+
+    - id: contrast_heavy_light_resembles_single_load_chain
+      origin_method: contrast
+      origin_variant: heavy_light
+      target_method: complex
+      target_variant: olympic_complex
+      conditions:
+        - "components[0].load_metric == 'absolute_load'"
+        - "components[1].load_metric == 'absolute_load'"
+        - "components[0].load_value == components[1].load_value"
+        - "fn:components_share_same_implement"
+      severity: informational
+      suggestion: "Cargas idénticas entre componentes sugieren single_load_chain (mismo implemento)."
+      notes: "If both components use same load and implement, the 'contrast' is actually a flow chain. Hook fn:components_share_same_implement requires catalog to confirm."
+
+    - id: contrast_heavy_light_resembles_superset
+      origin_method: contrast
+      origin_variant: heavy_light
+      target_method: complex
+      target_variant: superset
+      conditions:
+        - "components[0].movement_pattern != components[1].movement_pattern"
+        - "transition_rest_sec < 30"
+      severity: informational
+      suggestion: "Patrones motores distintos + descanso corto sugiere superset (antagonista), no contrast."
+      notes: "PAP requires shared movement pattern. If patterns differ, intent is likely density/time savings."
+
+    - id: contrast_french_resembles_complex_olympic
+      origin_method: contrast
+      origin_variant: french_contrast
+      target_method: complex
+      target_variant: olympic_complex
+      conditions:
+        - "components[0].load_metric == 'percent_1rm'"
+        - "components[1].load_metric == 'percent_1rm'"
+        - "components[2].load_metric == 'percent_1rm'"
+        - "components[3].load_metric == 'percent_1rm'"
+        - "components[0].load_pct_1rm == components[1].load_pct_1rm"
+      severity: informational
+      suggestion: "Cargas idénticas en todos los componentes sugieren olympic_complex (single load), no french_contrast."
+      notes: "French contrast requires load heterogeneity across components."
+
+  # ---------------------------------------------------------------------------
+  # ORIGIN: complex (family-aware drift)
+  # ---------------------------------------------------------------------------
+
+  complex:
+
+    # ----- single_load_chain drift -----
+
+    - id: slc_resembles_contrast_heavy_light
+      origin_method: complex
+      origin_variant_family: single_load_chain
+      origin_variant: olympic_complex
+      target_method: contrast
+      target_variant: heavy_light
+      conditions:
+        - "len(components) == 2"
+        - "rest_between_components_sec >= 15"
+        - "components[0].technical_complexity_index >= 6"
+        - "components[1].technical_complexity_index <= 4"
+      severity: informational
+      suggestion: "2 componentes + descanso PAP-window + heavy/light en complejidad sugiere contrast/heavy_light."
+      notes: "Frontier A.8.4.9. olympic_complex with 2 components and significant rest is closer to contrast."
+
+    - id: slc_resembles_independent_load_chain
+      origin_method: complex
+      origin_variant_family: single_load_chain
+      origin_variant: olympic_complex
+      target_method: complex
+      target_variant: accessory_complex
+      conditions:
+        - "fn:components_require_different_loads"
+        - "rest_between_components_sec > 10"
+      severity: structural_hard
+      suggestion: "Componentes con cargas independientes y descansos largos no son single_load_chain. Use independent_load_chain."
+      notes: "Hard drift: SLC structurally requires shared load + minimal rest."
+
+    - id: slc_resembles_french_contrast
+      origin_method: complex
+      origin_variant_family: single_load_chain
+      origin_variant: olympic_complex
+      target_method: contrast
+      target_variant: french_contrast
+      conditions:
+        - "len(components) == 4"
+        - "components[0].load_metric == 'percent_1rm' AND components[1].load_metric != 'percent_1rm'"
+        - "components[2].load_metric == 'percent_1rm' AND components[3].load_metric != 'percent_1rm'"
+      severity: informational
+      suggestion: "Heterogeneidad de cargas en 4 componentes sugiere french_contrast."
+      notes: "If components alternate loaded/unloaded, intent is PAP not chain accumulation."
+
+    # ----- independent_load_chain drift -----
+
+    - id: ilc_giant_set_resembles_circuit
+      origin_method: complex
+      origin_variant_family: independent_load_chain
+      origin_variant: giant_set
+      target_method: complex
+      target_variant: fixed_round_circuit
+      conditions:
+        - "len(unique(c.movement_pattern for c in components)) >= 3"
+        - "(target_muscle_group == 'full_body' OR target_muscle_group == null)"
+      severity: informational
+      suggestion: "Componentes diversos sugieren circuit, no giant_set."
+      notes: "Frontier A.8.8.5. Giant set requires single muscle group focus."
+
+    - id: ilc_superset_resembles_contrast_heavy_light
+      origin_method: complex
+      origin_variant_family: independent_load_chain
+      origin_variant: superset
+      target_method: contrast
+      target_variant: heavy_light
+      conditions:
+        - "components[0].movement_pattern == components[1].movement_pattern"
+        - "components[0].load_pct_1rm >= 80"
+        - "(components[1].load_pct_1rm <= 60 OR components[1].load_metric == 'bodyweight')"
+        - "rest_between_components_sec >= 15 AND rest_between_components_sec <= 90"
+      severity: informational
+      suggestion: "Estructura compatible con contrast/heavy_light. PAP probablemente es la intención."
+      notes: "Frontier A.8.8.2. Same pattern + heavy/light + PAP window = contrast intent."
+
+    - id: ilc_pha_resembles_circuit
+      origin_method: complex
+      origin_variant_family: independent_load_chain
+      origin_variant: peripheral_heart_action
+      target_method: complex
+      target_variant: fixed_round_circuit
+      conditions:
+        - "alternation_pattern == 'custom'"
+        - "fn:check_pha_strict_alternation"
+      severity: informational
+      suggestion: "Si la alternancia upper-lower no se respeta, considere circuit/fixed_round_circuit."
+      notes: "PHA loses purpose if alternation pattern is irregular."
+
+    - id: ilc_accessory_resembles_giant_set
+      origin_method: complex
+      origin_variant_family: independent_load_chain
+      origin_variant: accessory_complex
+      target_method: complex
+      target_variant: giant_set
+      conditions:
+        - "len(unique(c.movement_pattern for c in components)) <= 2"
+        - "len(components) >= 4"
+      severity: informational
+      suggestion: "Componentes homogéneos en patrón muscular sugieren giant_set, no accessory_complex."
+      notes: "Frontier ILC variants. Pattern homogeneity is the differentiator."
+
+    - id: ilc_antagonist_giant_set_resembles_superset
+      origin_method: complex
+      origin_variant_family: independent_load_chain
+      origin_variant: antagonist_giant_set
+      target_method: complex
+      target_variant: superset
+      conditions:
+        - "pairs_count == 1"
+      severity: informational
+      suggestion: "Un solo par antagónico es funcionalmente un superset. antagonist_giant_set requiere 2+ pares."
+      notes: "antagonist_giant_set with pairs_count == 1 collapses to a superset."
+
+    # ----- circuit drift -----
+
+    - id: circuit_time_capped_resembles_amrap
+      origin_method: complex
+      origin_variant_family: circuit
+      origin_variant: time_capped_circuit
+      target_method: amrap
+      target_variant: time_capped
+      conditions:
+        - "len(components) == 1"
+      severity: structural_hard
+      suggestion: "Un solo componente sostenido por tiempo es amrap/time_capped, no circuit."
+      notes: "Hard drift: circuit requires >= 3 components by definition."
+
+    - id: circuit_fixed_round_resembles_emom_alternating
+      origin_method: complex
+      origin_variant_family: circuit
+      origin_variant: fixed_round_circuit
+      target_method: emom
+      target_variant: alternating
+      conditions:
+        - "rest_between_components_sec == 0"
+        - "rest_inter_round_sec < 30"
+        - "fn:components_have_uniform_duration"
+      severity: informational
+      suggestion: "Componentes con duración uniforme + minimal rest sugiere emom/alternating con intervalo fijo."
+      notes: "Frontier A.6 ↔ A.8.6. EMOM enforces stricter timing; circuit is more flexible."
+
+    - id: tabata_resembles_emom_every_n_seconds
+      origin_method: complex
+      origin_variant_family: circuit
+      origin_variant: tabata
+      target_method: emom
+      target_variant: every_n_seconds
+      conditions:
+        - "len(components) >= 2"
+        - "work_sec != 20 OR rest_sec != 10"
+      severity: informational
+      suggestion: "Tabata fuera del estándar 20/10 o con >2 componentes se modela mejor como emom/every_n_seconds."
+      notes: "Tabata is canonical 20s/10s × 8. Variations don't deserve the tabata label."
+
+    - id: chipper_resembles_fixed_round_circuit
+      origin_method: complex
+      origin_variant_family: circuit
+      origin_variant: chipper
+      target_method: complex
+      target_variant: fixed_round_circuit
+      conditions:
+        - "fn:check_chipper_reps_monotonic_decreasing == false"
+        - "mean(c.reps_per_component for c in components) < 20"
+      severity: informational
+      suggestion: "Reps no decrecientes + bajas sugieren fixed_round_circuit con rondas."
+      notes: "Frontier chipper ↔ fixed_round_circuit. Chipper requires high front-loaded reps."
+
+# =============================================================================
+# RULES BY TARGET METHOD (cross-reference index)
+# =============================================================================
+# Reverse index: which rules suggest each target method.
+# Useful for v3 generator: "to choose method X, here are the patterns that
+# lead to X being the right choice."
+
+target_method_index:
+
+  straight:
+    - amrap_resembles_straight
+    - amrap_acted_as_straight
+    - pyramid_resembles_straight
+
+  cluster:
+    - rest_pause_resembles_cluster
+
+  rest_pause:
+    - cluster_resembles_rest_pause
+    - drop_resembles_rest_pause
+    - drop_double_resembles_rest_pause_dc
+
+  amrap:
+    - straight_resembles_amrap_rep_capped
+    - emom_collapsed_to_amrap_timecapped
+    - circuit_time_capped_resembles_amrap
+
+  emom:
+    - cluster_singles_resembles_emom_every_n_seconds
+    - circuit_fixed_round_resembles_emom_alternating
+    - tabata_resembles_emom_every_n_seconds
+
+  pyramid:
+    - emom_ascending_resembles_pyramid_ascending
+
+  contrast:
+    - slc_resembles_contrast_heavy_light
+    - slc_resembles_french_contrast
+    - ilc_superset_resembles_contrast_heavy_light
+
+  complex_single_load_chain:
+    - contrast_heavy_light_resembles_single_load_chain
+    - contrast_french_resembles_complex_olympic
+
+  complex_independent_load_chain:
+    - contrast_heavy_light_resembles_superset
+    - slc_resembles_independent_load_chain
+    - ilc_accessory_resembles_giant_set
+
+  complex_circuit:
+    - emom_resembles_tabata
+    - emom_alternating_resembles_fixed_round_circuit
+    - ilc_giant_set_resembles_circuit
+    - ilc_pha_resembles_circuit
+    - chipper_resembles_fixed_round_circuit
+    - pyramid_double_resembles_giant_set
+    - multi_exercise_pyramid_resembles_fixed_round_circuit
+
+  complex_superset:
+    - ilc_antagonist_giant_set_resembles_superset
+
+# =============================================================================
+# HOOKS REFERENCED IN RULES (for cross-reference with validator_functions_spec)
+# =============================================================================
+
+hooks_used:
+  - name: "fn:components_share_same_implement"
+    purpose: "Verify if components use same physical implement (requires catalog)"
+    notes: "Currently a stub; full implementation requires Layer B (catalog)."
+
+  - name: "fn:components_require_different_loads"
+    purpose: "Verify if components fundamentally cannot share load"
+    notes: "Plyometric + percent_1rm strength = different loads. Requires catalog for reliable detection."
+
+  - name: "fn:check_pha_strict_alternation"
+    purpose: "Already in validator_functions_spec.md Group 10"
+    notes: "Reused here from existing validator function."
+
+  - name: "fn:check_chipper_reps_monotonic_decreasing"
+    purpose: "Already in validator_functions_spec.md Group 10"
+    notes: "Reused here from existing validator function."
+
+  - name: "fn:components_have_uniform_duration"
+    purpose: "Verify if components have similar estimated execution duration"
+    notes: "New hook needed; estimates work_duration per component and checks variance."
+
+# =============================================================================
+# SUMMARY
+# =============================================================================
+
+summary:
+  total_rules: 30
+  by_origin_method:
+    straight: 1
+    cluster: 2
+    drop: 2
+    rest_pause: 1
+    amrap: 2
+    pyramid: 3
+    emom: 4
+    contrast: 3
+    complex: 12
+  by_severity:
+    informational: 28
+    structural_hard: 2
+  by_family_within_complex:
+    single_load_chain: 3
+    independent_load_chain: 5
+    circuit: 4
+  hooks_referenced: 5
+  bidirectional_pairs:
+    - pair: [cluster_resembles_rest_pause, rest_pause_resembles_cluster]
+      bidirectional: true
+    - pair: [drop_resembles_rest_pause]
+      bidirectional: false
+      note: "rest_pause → drop drift not modeled"
+    - pair: [emom_resembles_tabata, tabata_resembles_emom_every_n_seconds]
+      bidirectional: true
+    - pair: [amrap_resembles_straight, straight_resembles_amrap_rep_capped]
+      bidirectional: true
+    - pair: [pyramid_resembles_straight]
+      bidirectional: false
+      note: "no inverse modeled"
+    - pair: [multi_exercise_pyramid_resembles_fixed_round_circuit]
+      bidirectional: false
+      note: "added in A.10"
+    - pair: [ilc_antagonist_giant_set_resembles_superset]
+      bidirectional: false
+      note: "added in A.10; collapse case"
+
+  coverage_notes: |
+    The 30 rules cover the major frontiers identified through A.1-A.10:
+    - cluster ↔ rest_pause (boundary at intra-set rest)
+    - drop ↔ rest_pause (boundary at load delta)
+    - contrast ↔ complex/single_load_chain (load uniformity)
+    - contrast ↔ complex/independent_load_chain/superset (movement pattern)
+    - emom ↔ complex/circuit (multi-exercise structure)
+    - emom ↔ tabata (specific canonical structure)
+    - complex/SLC ↔ complex/ILC (load independence)
+    - complex/SLC ↔ contrast (heterogeneous components)
+    - complex/circuit ↔ amrap (single component case)
+    - multi_exercise_pyramid ↔ fixed_round_circuit (A.10: load progression magnitude)
+    - antagonist_giant_set ↔ superset (A.10: pairs_count collapse)
+
+    Drift detection is informational by default. Two rules are structural_hard
+    where the structure is incompatible with the declared method:
+    - slc_resembles_independent_load_chain (cargas independientes en SLC)
+    - circuit_time_capped_resembles_amrap (1 componente en circuit)
+
+    The 5 hooks referenced require either catalog (B) for full reliability
+    or are reused from validator_functions_spec.md Group 10.

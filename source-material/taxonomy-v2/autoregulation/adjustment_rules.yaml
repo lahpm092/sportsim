@@ -1,0 +1,289 @@
+# =============================================================================
+# Adjustment Rules — Training Taxonomy v2, Layer C
+# =============================================================================
+# Complete declarative rule catalog. Evaluated by the generic condition engine
+# (Group 5) extended with the C signal vocabulary (Group 12).
+# All rules ship with authority_default: suggest (Model C, C.0.4).
+# =============================================================================
+
+version: "1.0"
+schema_ref: autoregulation_schema.yaml
+
+# =============================================================================
+# INTRA-SESSION RULES (12) — C.2
+# =============================================================================
+
+intra_session_rules:
+
+  - id: load_reduce_on_undershoot
+    applies_to: { methods: [straight, drop, pyramid, complex_ilc], category: main }
+    conditions:
+      - "rir_delta <= -2"
+      - "remaining_work_units >= 1"
+    action: { type: load_delta, params: { pct: "fn:rir_to_load(rir_delta)", scope: remaining } }
+    authority_default: suggest
+    cooldown: 1_per_block
+    reason_template: "Set {n} salió @RIR {rir_reported} vs {rir_target} prescrito."
+
+  - id: load_increase_on_consistent_overshoot
+    applies_to: { methods: [straight, complex_ilc], category: main }
+    conditions:
+      - "consecutive_sets_with(rir_delta >= 2) >= 2"
+    action: { type: load_delta, params: { pct: "+min(2.5 * (rir_delta - 1), 5)", scope: remaining } }
+    authority_default: suggest
+    cooldown: 1_per_block
+    reason_template: "Dos sets consecutivos con margen amplio: subir conservadoramente."
+
+  - id: terminate_block_on_repeated_failure
+    conditions:
+      - "count(set_failed, current_block) >= 2"
+    action: { type: cap_intensity, params: { suggest_end_block: true } }
+    authority_default: suggest
+    reason_template: "Dos fallos en el bloque; continuar acumula fatiga sin estímulo útil."
+
+  - id: cluster_extend_rest_before_load
+    applies_to: { methods: [cluster] }
+    conditions:
+      - "reps_completed < reps_per_cluster"
+    action: { type: rest_delta, params: { sec: +10, scope: remaining_clusters } }
+    escalation:
+      if_repeats: { type: volume_delta, params: { clusters: -1 } }
+    authority_default: suggest
+    reason_template: "Cluster incompleto: extender descanso intra-set antes de tocar la carga."
+
+  - id: rest_pause_load_too_light
+    applies_to: { methods: [rest_pause] }
+    conditions:
+      - "activation_rir_reported >= 3"
+    action: { type: flag_only, params: { flag: rest_pause_load_too_light } }
+    reason_template: "Activación @RIR {x}: la carga quedó corta para rest-pause."
+
+  - id: pyramid_peak_protection
+    applies_to: { methods: [pyramid] }
+    conditions:
+      - "any_set(rir_delta <= -2) AND peak_set_pending"
+    action: { type: load_delta, params: { pct: "fn:rir_to_load(worst_delta)", scope: peak_only } }
+    authority_default: suggest
+    reason_template: "Sets de aproximación por debajo del objetivo: recortar el pico planificado."
+
+  - id: emom_density_overflow
+    applies_to: { methods: [emom] }
+    conditions:
+      - "count(work_time > 0.8 * interval_sec) >= 2"
+    action: { type: volume_delta, params: { reps_per_interval: -2, scope: remaining } }
+    authority_default: suggest
+    reason_template: "Trabajo excede 80% del intervalo en 2+ rondas: densidad insostenible."
+
+  - id: circuit_rpe_midpoint_check
+    applies_to: { methods: [complex_circuit] }
+    conditions:
+      - "rpe_reported >= 9 AND rounds_completed < 0.6 * total_rounds"
+    action: { type: volume_delta, params: { rounds: -1 } }
+    authority_default: suggest
+    reason_template: "RPE {x} antes del 60% del circuito: recortar una ronda."
+
+  - id: slc_weakest_link_failure
+    applies_to: { methods: [complex_slc] }
+    conditions:
+      - "any_component(set_failed)"
+    action: { type: load_delta, params: { pct: -7.5, scope: shared_load_remaining_rounds } }
+    authority_default: suggest
+    reason_template: "Fallo en {component}: la carga compartida baja para toda la cadena."
+
+  - id: pain_mild
+    priority: absolute
+    conditions: ["pain_flag.severity BETWEEN 1 AND 3"]
+    action: { type: flag_only, params: { flag: pain_reported } }
+    reason_template: "Dolor leve ({severity}/10) en {region}: registrado, sin acción."
+
+  - id: pain_moderate
+    priority: absolute
+    conditions: ["pain_flag.severity BETWEEN 4 AND 6"]
+    action:
+      type: substitute_exercise
+      params:
+        via: equivalences
+        avoid_region: pain_flag.body_region
+        fallback: { type: load_delta, params: { pct: -20 } }
+    authority_default: suggest
+    reason_template: "Dolor {severity}/10 en {region}: sustitución vía equivalencias o reducción."
+    note: "Requiere catalog addendum loaded_regions + fn:exercise_loads_region."
+
+  - id: pain_severe
+    priority: absolute
+    conditions: ["pain_flag.severity >= 7"]
+    action: { type: abort_block, params: { suggest_professional: true } }
+    authority_default: suggest
+    reason_template: "Dolor {severity}/10 en {region}: terminar el bloque y considerar consulta profesional."
+
+# =============================================================================
+# INTER-SESSION RULES (9) — C.4
+# =============================================================================
+
+inter_session_rules:
+
+  - id: pattern_load_reduction_on_streak
+    conditions: ["undershoot_streak(pattern) >= 2"]
+    action: { type: load_delta, params: { pct: -5, scope: "next_session.blocks WHERE pattern" } }
+    authority_default: suggest
+    reason_template: "Dos sesiones consecutivas por debajo del RIR objetivo en {pattern}."
+
+  - id: progression_hold
+    conditions:
+      - "undershoot_streak(pattern) == 1"
+      - "readiness_acute < readiness_baseline - 0.5"
+    action: { type: cap_intensity, params: { hold_planned_progression: true } }
+    authority_default: suggest
+    reason_template: "Señal débil de fatiga: mantener cargas, no aplicar el incremento planificado."
+
+  - id: progression_resume_or_accelerate
+    conditions:
+      - "consecutive_sessions_with_overshoot(pattern) >= 2"
+      - "fatigue_state in [fresh, normal]"
+    action: { type: load_delta, params: { pct: +2.5, scope: next_session_pattern } }
+    authority_default: suggest
+    cooldown: 1_per_week_per_pattern
+    reason_template: "Margen consistente en {pattern} con estado {fatigue_state}: avanzar."
+
+  - id: volume_redistribution_on_mrv
+    conditions: ["muscle_volume_exceeded_mrv(group)"]
+    action: { type: volume_delta, params: { sets: -2, scope: "accessory blocks targeting group" } }
+    authority_default: suggest
+    reason_template: "{group} a {x} sets efectivos/7d (MRV {mrv}): recortar accesorios."
+
+  - id: conditioning_spike_guard
+    conditions: ["acwr_conditioning > 1.5"]
+    action: { type: cap_intensity, params: { conditioning_load_cap_7d: "chronic × 1.3" } }
+    authority_default: suggest
+    reason_template: "Carga de conditioning aguda {acwr}× la crónica: techo preventivo."
+
+  - id: conditioning_detraining_floor
+    conditions:
+      - "acwr_conditioning < 0.8"
+      - "NOT taper_declared"
+    action: { type: flag_only, params: { flag: conditioning_load_detraining } }
+    reason_template: "Carga de conditioning aguda {acwr}× la crónica: posible destrenamiento."
+    note: "Suprimida durante taper declarado (campo de sesión/plan; formalización en D)."
+
+  - id: e1rm_decline_alert
+    conditions: ["e1rm_trend(hub_lift) <= -5% over 3 sessions"]
+    action: { type: flag_only, params: { flag: e1rm_decline_detected, escalate_to: fatigue_state_evaluation } }
+    reason_template: "e1RM estimado de {exercise} cayó {x}% en 3 sesiones: fatiga objetiva."
+
+  - id: stale_progress_detection
+    conditions:
+      - "e1rm_trend(exercise) BETWEEN -1% AND +1% over 4 weeks"
+      - "volume_status(primary_group) in [productive, high]"
+      - "fatigue_state in [fresh, normal]"
+    action: { type: flag_only, params: { flag: stale_progress_detected } }
+    reason_template: "e1RM plano 4 semanas con volumen productivo: candidato a rotación de método/variante."
+    note: "v2 solo señala; sugerir QUÉ rotación es del generador v3 (consume drift target index)."
+
+  - id: readiness_chronic_low
+    conditions: ["readiness_acute < readiness_baseline - 1.0 sostenido 3+ días"]
+    action: { type: flag_only, params: { flag: readiness_chronic_low, escalate_to: deload_evaluation } }
+    reason_template: "Readiness {x} por debajo de tu baseline sostenido: evaluar descarga."
+
+# =============================================================================
+# DELOAD RULES (4) — C.5
+# =============================================================================
+
+deload_rules:
+
+  - id: deload_on_overreached_sustained
+    conditions: ["fatigue_state == overreached sostenido >= 5 días"]
+    action:
+      type: suggest_deload
+      params: { scope: global, type: volume_deload, sets_pct: -40, load_pct: 0,
+                duration_days: 7, conditioning_load_cap: "0.5 × chronic" }
+    authority_default: suggest
+    reason_template: "Estado 'overreached' sostenido: {evidence_summary}."
+
+  - id: deload_local_on_mrv_persistent
+    conditions:
+      - "muscle_volume_exceeded_mrv(group) sostenido >= 14 días"
+      - "adjustment_applied(volume_redistribution_on_mrv, group) sin resolver"
+    action:
+      type: suggest_deload
+      params: { scope: muscle_local, type: volume_deload, sets_pct: -40, duration_days: 7 }
+    authority_default: suggest
+    reason_template: "{group} sobre MRV 2+ semanas pese a redistribución: descarga local."
+
+  - id: deload_on_objective_decline
+    conditions:
+      - "flag_active(e1rm_decline_detected) en >= 2 hub lifts"
+      - "flag_active(readiness_chronic_low)"
+    action:
+      type: suggest_deload
+      params: { scope: global, type: volume_deload, sets_pct: -40, load_pct: 0,
+                duration_days: 7, conditioning_load_cap: "0.5 × chronic" }
+    authority_default: suggest
+    reason_template: "Caída objetiva de rendimiento + readiness crónica baja: la señal más fuerte del sistema."
+
+  - id: deload_suppression_window
+    type: meta_rule
+    effect: "tras deload con status=completed, suprimir nuevas propuestas por 21 días"
+    note: "Anti-cascada: el cuerpo necesita tiempo para mostrar el efecto."
+
+# =============================================================================
+# PRE-SESSION / READINESS RULES (4) — C.6
+# =============================================================================
+
+readiness_rules:
+
+  - id: readiness_yellow
+    conditions: ["-1.2 < readiness_delta < -0.5"]
+    action:
+      type: volume_delta
+      params: { sets_pct: -20, scope: accessory_blocks }
+    secondary: { hold_planned_progression: true }
+    authority_default: suggest
+    reason_template: "Readiness {score} vs baseline {baseline}: principal intacto, accesorios recortados."
+
+  - id: readiness_red
+    conditions: ["readiness_delta <= -1.2"]
+    action: { type: load_delta, params: { pct: -10, scope: session_global } }
+    secondary: { type: volume_delta, params: { sets_pct: -30, scope: accessory_blocks } }
+    alternative_offered: "sesión técnica liviana (50-60%, foco en calidad)"
+    authority_default: suggest
+    reason_template: "Readiness muy por debajo de tu baseline: día de mantener, no de construir."
+
+  - id: severe_single_item_override
+    type: meta_rule
+    conditions: ["any_item(readiness) <= 1"]
+    effect: "zona mínima = yellow, independiente del promedio"
+    reason_template: "{item} en 1/5: el promedio no captura el impacto de un extremo."
+
+  - id: green_light_day
+    conditions:
+      - "readiness_delta >= +0.8"
+      - "fatigue_state == fresh"
+    action: { type: flag_only, params: { flag: green_light_day } }
+    reason_template: "Readiness alta + estado fresco: buen día para aplicar la progresión o intentar top sets."
+    note: "Flag-only por diseño; mirando a la automatización v3."
+
+# =============================================================================
+# SUMMARY
+# =============================================================================
+
+summary:
+  total_rules: 29
+  by_horizon:
+    intra_session: 12
+    inter_session: 9
+    deload: 4
+    readiness: 4
+  meta_rules: 2          # deload_suppression_window, severe_single_item_override
+  by_action_type:
+    load_delta: 7
+    volume_delta: 5
+    rest_delta: 1
+    cap_intensity: 3
+    substitute_exercise: 1
+    suggest_deload: 3
+    abort_block: 1
+    flag_only: 8
+  authority: "all suggest (v2); per-rule promotion to auto is the v3 hook"
+  hooks_referenced:
+    - fn:rir_to_load
+    - fn:exercise_loads_region   # pending catalog addendum

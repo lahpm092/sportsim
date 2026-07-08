@@ -1,0 +1,281 @@
+# =============================================================================
+# Macrocycle Sample — "HYROX Prep 12 semanas" — Training Taxonomy v2
+# =============================================================================
+# MUESTRA: fechas hipotéticas (evento A a 12 semanas del inicio).
+# Demuestra: reverse planning, fases con tags, 3 mesociclos (2 nuevos + 1 por
+# referencia a template_examples.yaml), evento C como simulación, semana test,
+# taper formal con loop a C, transición post-evento.
+# Para materialización real faltan: fecha real del evento, fitness actual,
+# estaciones débiles (bias), disponibilidad semanal.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# SESSION TEMPLATES NUEVOS (se suman a los de template_examples.yaml)
+# -----------------------------------------------------------------------------
+
+session_templates:
+
+  st_hx_aerobic_base:
+    name: "Base aeróbica + técnica de carrera"
+    blocks:
+      - method: straight
+        variant: default
+        exercise: { type: concrete, ref: run }
+        params: { duration_min: 45, intensity: "Z2 conversacional" }
+        intent_declared: conditioning
+        energy_system: aerobic_power
+      - method: straight
+        variant: default
+        exercise: { type: concrete, ref: run }
+        params: { sets: 6, work: "strides 80m @ 90%", rest_inter_set_sec: 60 }
+        intent_declared: technique
+        note: "strides: velocidad sin costo metabólico, economía de carrera"
+
+  st_hx_tempo:
+    name: "Tempo / umbral"
+    blocks:
+      - method: emom
+        variant: every_n_seconds
+        intent_declared: conditioning
+        energy_system: aerobic_power
+        exercise:
+          type: placeholder
+          query: { movement_pattern: locomotion, implement_in: [bodyweight, erg_row, erg_ski] }
+          fallback_via: equivalences
+        params: { interval_sec: 300, total_intervals: 4,
+                  work_rest_pattern: "4min @ umbral / 1min flotando" }
+        note: "4×4 noruego adaptado; modalidad por placeholder según frescura de piernas"
+
+  st_hx_simulation:
+    name: "Simulación HYROX completa"
+    blocks:
+      - method: complex
+        variant: fixed_round_circuit
+        family: circuit
+        intent_declared: conditioning
+        energy_system: mixed
+        params: { total_rounds: 8, rest_inter_round_sec: 0,
+                  note: "1km run entre estaciones — formato carrera" }
+        components:
+          - { exercise: { type: concrete, ref: run }, work: "1000m" }
+          - { exercise: { type: concrete, ref: ski_erg }, work: "1000m" }
+          - { exercise: { type: concrete, ref: sled_push }, work: "50m" }
+          - { exercise: { type: concrete, ref: sled_pull }, work: "50m" }
+          - { exercise: { type: concrete, ref: burpee }, work: "80m broad jump burpees" }
+          - { exercise: { type: concrete, ref: row_erg }, work: "1000m" }
+          - { exercise: { type: concrete, ref: farmers_carry }, work: "200m" }
+          - { exercise: { type: concrete, ref: sandbag_lunge }, work: "100m" }
+          - { exercise: { type: concrete, ref: wall_ball }, reps: 100 }
+        note: "evento C del macro: se entrena a través, ES entrenamiento"
+
+  st_hx_race_primer:
+    name: "Primer pre-carrera"
+    blocks:
+      - method: straight
+        variant: default
+        exercise: { type: concrete, ref: run }
+        params: { duration_min: 15, intensity: "Z1-Z2 + 4 strides @ race pace" }
+        intent_declared: technique
+      - method: complex
+        variant: fixed_round_circuit
+        family: circuit
+        intent_declared: technique
+        energy_system: alactic
+        params: { total_rounds: 2, rest_inter_round_sec: 180 }
+        components:
+          - { exercise: { type: concrete, ref: ski_erg }, work: "200m @ race pace" }
+          - { exercise: { type: concrete, ref: wall_ball }, reps: 10 }
+        note: "tocar las estaciones, no fatigar: el taper manda"
+
+# -----------------------------------------------------------------------------
+# MICROCICLOS NUEVOS
+# -----------------------------------------------------------------------------
+
+microcycle_templates:
+
+  mc_hx_base_4d:
+    name: "Semana base concurrente 4 días"
+    days_span: 7
+    slots:
+      - { slot_id: lower_strength, intent: strength, session_template: st_hx_lower_strength,
+          day_preference: 1, primary_patterns: [squat, hinge], conditioning_load_target: low }
+      - { slot_id: aerobic_base, intent: conditioning, session_template: st_hx_aerobic_base,
+          day_preference: 2, conditioning_load_target: moderate }
+      - { slot_id: upper_carry, intent: mixed, session_template: st_hx_upper_carry,
+          day_preference: 4, primary_patterns: [push_h, pull_v, carry],
+          conditioning_load_target: moderate }
+      - { slot_id: tempo, intent: conditioning, session_template: st_hx_tempo,
+          day_preference: 6, conditioning_load_target: high }
+    conditioning_budget: { high_max: 1, moderate_max: 2 }
+    interference_rules:
+      - "slot(tempo) >= 48h después de slot(lower_strength)"
+
+  mc_hx_sharpen_4d:
+    name: "Semana afilado HYROX 4 días"
+    days_span: 7
+    slots:
+      - { slot_id: strength_maintenance, intent: strength, session_template: st_hx_lower_strength,
+          day_preference: 1, primary_patterns: [squat, hinge], conditioning_load_target: low,
+          note: "solo bloque cluster + contrast: dosis mínima, máxima calidad" }
+      - { slot_id: stations_race_pace, intent: conditioning, session_template: st_hx_stations,
+          day_preference: 2, conditioning_load_target: high }
+      - { slot_id: compromised_run, intent: conditioning, session_template: st_hx_compromised_run,
+          day_preference: 4, conditioning_load_target: high }
+      - { slot_id: primer_or_easy, intent: recovery, session_template: st_hx_aerobic_base,
+          day_preference: 6, conditioning_load_target: low }
+    conditioning_budget: { high_max: 2, moderate_max: 1 }
+    interference_rules:
+      - "slot(compromised_run) >= 48h después de slot(strength_maintenance)"
+      - "slot(stations_race_pace) NO adyacente a slot(compromised_run)"
+
+  mc_hx_race_week:
+    name: "Semana de competencia (gobernada por taper)"
+    days_span: 7
+    slots:
+      - { slot_id: primer_mid, intent: technique, session_template: st_hx_race_primer,
+          day_preference: 2, conditioning_load_target: low }
+      - { slot_id: primer_final, intent: technique, session_template: st_hx_race_primer,
+          day_preference: 4, conditioning_load_target: low }
+      # día 6 = RACE DAY (el evento no es un slot: es el evento)
+    conditioning_budget: { high_max: 0, moderate_max: 0 }
+
+# -----------------------------------------------------------------------------
+# MESOCICLOS
+# -----------------------------------------------------------------------------
+
+mesocycle_templates:
+
+  mt_hx_base_4w:
+    id: mt_hx_base_4w
+    version: 1
+    status: published
+    forked_from: null
+    name: "Base concurrente 4 semanas"
+    periodization_model: concurrent_hybrid
+    model_variant: balanced
+    duration_weeks: 4
+    weeks:
+      - { week: 1, microcycle: mc_hx_base_4d, type: intro,
+          modifiers: [ { dimension: load_pct, delta: -10, scope: { type: all } } ],
+          note: "familiarización: cargas conservadoras, foco técnico" }
+      - { week: 2, microcycle: mc_hx_base_4d, type: standard,
+          modifiers: [ { dimension: conditioning_volume_pct, delta: +10, scope: { type: by_intent, value: conditioning } } ] }
+      - { week: 3, microcycle: mc_hx_base_4d, type: standard,
+          modifiers: [ { dimension: conditioning_volume_pct, delta: +20, scope: { type: by_intent, value: conditioning } },
+                       { dimension: load_pct, delta: +2.5, scope: { type: by_intent, value: max_strength } } ] }
+      - { week: 4, microcycle: mc_hx_base_4d, type: planned_deload,
+          deload_recipe: { sets_pct: -40, load_pct: 0, conditioning_load_cap: "0.5 × chronic" } }
+    progression_scheme:
+      axis: conditioning_volume
+      ramp:
+        - { weeks: [2, 3], dimension: conditioning_volume_pct, per_week: +10,
+            scope: { type: by_intent, value: conditioning } }
+      description: "base aeróbica progresa, fuerza se asienta; deload semana 4"
+    library_metadata: { goal: [hyrox_prep, base], level: advanced,
+                        weekly_sessions: 4, weekly_time_budget_min: 300, author: human }
+
+  # mt_hyrox_prep_3_1: POR REFERENCIA — vive en template_examples.yaml
+  # (specific prep: estaciones + carrera comprometida, conditioning_bias)
+
+  mt_hx_sharpen_3w:
+    id: mt_hx_sharpen_3w
+    version: 1
+    status: published
+    forked_from: null
+    name: "Afilado HYROX 3 semanas"
+    periodization_model: concurrent_hybrid
+    model_variant: conditioning_bias
+    duration_weeks: 3
+    weeks:
+      - { week: 1, microcycle: mc_hx_sharpen_4d, type: standard,
+          modifiers: [ { dimension: conditioning_volume_pct, delta: 0, scope: { type: all } } ],
+          note: "todo a ritmo de carrera; volumen controlado" }
+      - { week: 2, microcycle: mc_hx_sharpen_4d, type: test,
+          modifiers: [ { dimension: sets_pct, delta: -20, scope: { type: by_intent, value: strength } } ],
+          note: "SIMULACIÓN COMPLETA (evento C del macro) reemplaza el slot de
+                 estaciones; AMRAP de calibración en lower_strength (e1RM hubs)" }
+      - { week: 3, microcycle: mc_hx_sharpen_4d, type: standard,
+          modifiers: [ { dimension: conditioning_volume_pct, delta: -15, scope: { type: all } } ],
+          note: "última semana plena; el taper arranca al final (día 4)" }
+    progression_scheme:
+      axis: intensity
+      ramp:
+        - { weeks: [1, 2, 3], dimension: load_pct, per_week: 0, scope: { type: all } }
+      description: "sin progresión de carga: consolidar ritmo de carrera;
+                    la intensidad ES el race pace"
+    library_metadata: { goal: [hyrox_prep, peak], level: advanced,
+                        weekly_sessions: 4, weekly_time_budget_min: 280, author: human }
+
+  mt_hx_race_1w:
+    id: mt_hx_race_1w
+    version: 1
+    status: published
+    forked_from: null
+    name: "Semana de carrera"
+    periodization_model: concurrent_hybrid
+    model_variant: conditioning_bias
+    duration_weeks: 1
+    weeks:
+      - { week: 1, microcycle: mc_hx_race_week, type: standard,
+          note: "gobernada por el taper: 2 primers + carrera día 6" }
+    progression_scheme:
+      axis: intensity
+      ramp: []
+      description: "n/a — semana de expresión"
+    library_metadata: { goal: [hyrox_prep, competition], level: advanced,
+                        weekly_sessions: 2, weekly_time_budget_min: 90, author: human }
+
+# -----------------------------------------------------------------------------
+# EL MACROCICLO
+# -----------------------------------------------------------------------------
+
+macrocycle:
+  id: macro_hyrox_sample_12w
+  name: "HYROX Prep — muestra 12 semanas + transición"
+  start_date: 2026-06-15
+  end_date: 2026-09-13
+  state: planned
+
+  events:
+    - { id: ev_hyrox_main, name: "HYROX (evento principal — fecha muestra)",
+        date: 2026-09-05, priority: A, type: competition, sport_tags: [hyrox] }
+    - { id: ev_simulation, name: "Simulación HYROX completa",
+        date: 2026-08-19, priority: C, type: test, sport_tags: [hyrox],
+        note: "se entrena a través: la simulación ES entrenamiento (semana test
+               de mt_hx_sharpen_3w)" }
+
+  phases:
+    - { order: 1, purpose: general_prep, tags: [base],
+        mesocycle: mt_hx_base_4w, start_date: 2026-06-15, weeks: 4 }
+    - { order: 2, purpose: specific_prep, tags: [],
+        mesocycle: mt_hyrox_prep_3_1,            # ← por referencia al template existente
+        start_date: 2026-07-13, weeks: 4 }
+    - { order: 3, purpose: peak, tags: [],
+        mesocycle: mt_hx_sharpen_3w, start_date: 2026-08-10, weeks: 3 }
+    - { order: 4, purpose: competition, tags: [],
+        mesocycle: mt_hx_race_1w, start_date: 2026-08-31, weeks: 1 }
+    - { order: 5, purpose: transition, tags: [off_season],
+        mesocycle: null, start_date: 2026-09-07, weeks: 1,
+        note: "regenerativo no estructurado; el tag off_season marca el inicio
+               del segmento post-temporada" }
+
+  taper:
+    event_ref: ev_hyrox_main
+    start_date: 2026-08-27
+    duration_days: 10
+    strategy: exponential
+    deltas:
+      volume_pct: -50
+      intensity: maintained
+      frequency: maintained
+      conditioning: "sharpening: dosis cortas a race pace (los primers)"
+    note: "taper_declared activo 27-ago → 4-sep: C suprime detraining flag,
+           modula fatigue_state, y vigila taper_not_producing_freshness"
+
+  reverse_planning_trace: |
+    Razonado hacia atrás desde el evento A (2026-09-05):
+    race week (31-ago) ← taper arranca 27-ago (10d, dentro de [8,14] para A)
+    ← peak/afilado 3 sem (10-ago) con simulación C a 17 días del evento
+    ← specific prep 4 sem (13-jul) = mt_hyrox_prep_3_1
+    ← base 4 sem (15-jun).
+    El evento es la única fecha inmóvil; todo lo demás se derivó de él.

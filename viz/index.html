@@ -30,10 +30,10 @@
   .title h1{font-size:21px;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
   .title .sub{font-size:12.5px;font-style:italic;color:var(--ink-soft);margin-top:4px;letter-spacing:.02em}
   nav{display:flex;gap:6px;pointer-events:auto}
-  nav button{font-family:var(--serif);font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;
+  nav button,nav a{font-family:var(--serif);font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;
     background:transparent;border:1px solid transparent;color:var(--ink-faint);
-    padding:8px 14px;cursor:pointer;transition:all .25s}
-  nav button:hover{color:var(--ink)}
+    padding:8px 14px;cursor:pointer;transition:all .25s;text-decoration:none;display:inline-block}
+  nav button:hover,nav a:hover{color:var(--ink)}
   nav button.active{color:var(--ink);border-bottom:1px solid var(--ink)}
 
   /* transport */
@@ -143,6 +143,7 @@
     <button data-view="board" class="active">Board</button>
     <button data-view="film">Film</button>
     <button data-view="evolution">Evolution</button>
+    <a href="./lab.html">Laboratory</a>
   </nav>
 </header>
 

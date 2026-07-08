@@ -1,0 +1,321 @@
+# =============================================================================
+# Periodization Schema — Training Taxonomy v2, Layer D
+# =============================================================================
+# Formal schema consolidating D.0-D.5. Models live in periodization_models.yaml.
+# Worked examples: template_examples.yaml.
+# =============================================================================
+
+version: "1.0"
+layer: "D"
+parent: "taxonomy_v2"
+depends_on: ["Layer A (sessions/blocks)", "Layer B (catalog, placeholders, equivalences)",
+             "Layer C (fatigue_state, volume_status, deload_proposal, taper consumers)"]
+
+# =============================================================================
+# SECTION 1 — HIERARCHY & TEMPLATE MODEL (D.0)
+# =============================================================================
+
+hierarchy:
+  levels: [session, microcycle, mesocycle, macrocycle]
+  depth_decision: "four levels, no more; intermediate 'blocks of blocks'
+                   covered by macro phases + tags"
+
+template_model:
+  levels_templated: [session_template, microcycle_template, mesocycle_template]
+  macro: "instance-first (date/event-anchored, bespoke);
+          macro_template MARKED as future extension (canned programs)"
+  composition: "by reference; NO inheritance — variation = fork with lineage"
+  versioning:
+    fields: { version: integer, forked_from: "{id, version} | null",
+              status: [draft, published, archived] }
+    rules:
+      - "instances freeze template@version; template evolution never touches
+         running instances"
+      - "lineage is analysis data: template families compared by instance outcomes"
+  parameterization:
+    relative_loads: "free (A is %1RM/RIR/bodyweight_ratio by design)"
+    volume_scaling: { values: [fixed, landmark_relative], default: fixed,
+                      landmark_relative: "scales accessory sets vs C.3 landmarks
+                                          at materialization when profile exists" }
+    exercise_placeholder:
+      structure:
+        query: "catalog query: movement_pattern, laterality, implement_in,
+                mechanical_demand_min/max, exclude_tags, ..."
+        resolution: at_materialization
+        fallback_via: equivalences          # B.2.4 edges
+      power: "one template materializes differently per gym/equipment
+              without edits"
+
+materialization:
+  pipeline: [BIND_dates, RESOLVE_placeholders, SCALE_volumes, VALIDATE, EMIT_instance]
+  validation_two_times:
+    template_time: "structural + relative (B.4) — THE authoring mode (no athlete)"
+    materialization_time: "all of the above + placeholder resolution verified
+                           + absolute athlete checks (future profile)"
+  errors:
+    template_exercise_ref_missing: hard
+    template_placeholder_unresolvable: hard
+    template_resolution_via_medium_equivalence: informational
+
+library:
+  entry: { template_ref, metadata: { goal, level, weekly_sessions,
+           weekly_time_budget_min, equipment_required: DERIVED, author: human|generated } }
+  v3_role: "templates are the lingua franca between human and generated
+            programming; completed instances (+ C outcomes) are the
+            generator's training corpus"
+
+# =============================================================================
+# SECTION 2 — MICROCYCLE (D.1)
+# =============================================================================
+
+session_slot:
+  fields:
+    slot_id: string
+    intent: { enum: [strength, hypertrophy, power, conditioning, mixed,
+                     technique, recovery] }
+    session_template_ref: "id | null (null = declared unfilled, draft)"
+    primary_patterns: "[movement_pattern]"
+    target_zones: "[Z1-Z6] | null"
+    conditioning_load_target: "[low, moderate, high] | null"
+    day_assignment:
+      type: { enum: [fixed, preferred, flexible] }
+      day: "int | null"
+      v3_semantics: "human assigns + validator checks (v2); generator solves
+                     with preferred=soft, fixed=hard (v3)"
+    constraints: "[string]"
+
+microcycle_template:
+  fields:
+    id: string
+    version: integer
+    name: string
+    days_span: { type: integer, default: 7, range: [5, 10],
+                 marked_v3: "span range is a variety input for the generator" }
+    slots: "[session_slot]"
+    frequency_targets: "map<pattern, {min, max}> | null"
+    conditioning_budget: { high_max: integer, moderate_max: integer }
+    interference_profile: "ref | inline + local overrides"
+  rest_days: implicit (days without slots)
+  frequency_vs_volume: "D validates structure (frequency present);
+                        C.3 validates dose (volume sufficient) — complementary"
+
+interference_rules:
+  severity_model:
+    max_severity: warning
+    only_hard: "logical impossibility (microcycle_day_conflict)"
+    rationale: "coaches violate interference deliberately (e.g. race simulation)"
+    v3_constraint: true
+    v3_semantics: "MARKED (user decision): warnings for humans = CONSTRAINTS
+                   for the v3 generator. Resolves finding #17 pattern for
+                   interference."
+  scopes: [same_day, adjacent_day, microcycle]
+  seed_catalog:
+    - { id: quality_locomotion_after_lower_heavy, scope: adjacent_day, severity: warning,
+        rule: "conditioning high+locomotion within 48h after lower strength" }
+    - { id: no_adjacent_lactic_high, scope: adjacent_day, severity: warning,
+        rule: "two conditioning_load=high on consecutive days" }
+    - { id: power_requires_freshness, scope: adjacent_day, severity: warning,
+        rule: "power slot the day after conditioning high" }
+    - { id: same_pattern_heavy_spacing, scope: microcycle, severity: warning,
+        rule: "two strength slots same primary_pattern < 72h apart" }
+    - { id: axial_loading_adjacent, scope: adjacent_day, severity: warning,
+        rule: "heavy squat and hinge slots on consecutive days" }
+    - { id: same_day_order_strength_first, scope: same_day, severity: info,
+        rule: "strength before conditioning, 6h+ separation ideal" }
+    - { id: conditioning_budget_exceeded, scope: microcycle, severity: warning,
+        rule: "count(high) > budget.high_max" }
+    - { id: recovery_slot_after_peak_day, scope: microcycle, severity: info,
+        rule: "recovery slot ideally after highest combined-load day" }
+    - { id: minimum_rest_density, scope: microcycle, severity: warning,
+        rule: "rest days < floor(days_span/7)" }
+    - { id: technique_requires_freshness, scope: adjacent_day, severity: info,
+        rule: "technique slot after conditioning high or peak day" }
+  noted_for_future: ["grip-intensive before heavy pull spacing",
+                     "hard-surface running before plyometrics"]
+
+# =============================================================================
+# SECTION 3 — MESOCYCLE (D.2)
+# =============================================================================
+
+mesocycle_template:
+  fields:
+    id: string
+    version: integer
+    status: [draft, published, archived]
+    forked_from: "{id, version} | null"
+    name: string
+    periodization_model: "ref (periodization_models.yaml)"
+    duration_weeks: { canonical: [3, 6], extended: [2, 8] }
+    weeks: "[week_entry]"
+    progression_scheme: see_below
+    library_metadata: "{goal, level, weekly_sessions, time_budget, author}"
+
+week_entry:
+  fields:
+    week: integer
+    microcycle: microcycle_template_ref
+    type: { enum: [standard, planned_deload, test, intro] }
+    modifiers: "[week_modifier]"
+    deload_recipe: "for planned_deload: SAME structure as C.5
+                    deload_proposal.prescription_deltas — one deload language;
+                    reactive vs proactive differ in trigger, not in shape"
+    note: "string | null"
+  test_week: "materializes AMRAP blocks (A.4) on hub lifts; executed AMRAPs
+              feed e1RM calibration (C.4) with highest-quality data"
+  intro_week: "loads -10/-15%, technique focus; typical week 1 with new
+               methods/exercises"
+
+week_modifier:
+  fields:
+    dimension: { enum: [load_pct, sets, sets_pct, reps, conditioning_volume_pct, rest_sec] }
+    delta: number
+    scope: { type: [all, by_intent, by_pattern, by_block_tag], value: "string | null" }
+  conflict: "same week + same dimension + overlapping scopes →
+             week_modifier_conflict (applied in declared order, flag leaves trail)"
+
+progression_scheme:
+  fields:
+    axis: { enum: [intensity, volume, density, conditioning_volume, mixed] }
+    ramp: "[{weeks, dimension, per_week | delta, scope}] — structured"
+    description: "human prose preserved"
+  validation: "coherence vs declared periodization_model →
+               mesocycle_progression_incoherent_with_model (warning, drift spirit)"
+
+deload_overdue_threshold:
+  by_level: { beginner: 7, intermediate: 5, advanced: 4 }
+  rationale: "USER DECISION: inverse to level — advanced athletes train closer
+              to limits and accumulate fatigue faster"
+  level_source: "athlete_profile.level ?? template.library_metadata.level ?? intermediate"
+  model_override: "periodization_model may tighten/relax (effective = min(level, model))"
+
+# =============================================================================
+# SECTION 4 — MACROCYCLE, EVENTS, TAPER (D.4)
+# =============================================================================
+
+macrocycle:
+  fields:
+    id: string
+    name: string
+    start_date: date
+    end_date: date
+    state: [planned, active, completed]
+    events: "[event]"
+    phases: "[phase_entry]"
+  reverse_planning: "macro is reasoned BACKWARD from event A:
+                     taper <- peak <- specific <- general.
+                     v2: human sequences + validator checks continuity.
+                     MARKED v3: generator performs reverse planning from date."
+
+event:
+  fields:
+    id: string
+    name: string
+    date: date
+    priority: { enum: [A, B, C] }
+    type: { enum: [competition, test, milestone] }
+    sport_tags: "[string]"
+  priority_semantics:
+    A: "the cycle's event — full taper, the whole macro aims here"
+    B: "important but subordinate — mini-taper, no macro restructuring"
+    C: "train through — the event IS training (e.g. HYROX as race simulation)"
+  immovability: "the event is the ONLY immovable date in the system (D.5.3)"
+
+phase_entry:
+  fields:
+    order: integer
+    purpose: { enum: [general_prep, specific_prep, peak, competition, transition],
+               closed: true, count: 5 }
+    tags: "[string] — suggested vocabulary: [base, off_season,
+           return_from_injury, reload]; zero validation weight in v2"
+    mesocycle: "template_ref | inline"
+    start_date: date
+    weeks: integer
+  tags_promotion_criterion: >
+    USER DECISION (D.4.7): enum values must EARN their place via distinct
+    system behavior. Tags capture semantics at zero schema cost; a tag that
+    accumulates own validation gets promoted to enum (same pattern as special
+    bars in B.1). off_season is a season SEGMENT containing phases, never a
+    purpose — category-error guard. Tags are v3 generation hints.
+  block_model_mapping: "accumulation -> general/specific_prep;
+                        transmutation -> specific_prep; realization -> peak;
+                        sequence A->T->R lives HERE, one mesocycle = one block"
+
+taper:
+  fields:
+    event_ref: event_id
+    duration_days: integer
+    strategy: { enum: [exponential, linear_taper, step_taper], default: exponential }
+    deltas:
+      volume_pct: { default: -50, evidence_range: [-60, -40] }
+      intensity: maintained        # the classic error is reducing it
+      frequency: maintained
+      conditioning: "sport-specific sharpening: short doses at race pace"
+  defaults_by_priority:
+    A: { duration_days: [8, 14], volume_pct: -50, strategy: exponential }
+    B: { duration_days: [3, 5], volume_pct: -30, strategy: step_taper }
+    C: null
+  taper_declared:
+    definition: "derived state: inside an active taper window"
+    consumers:
+      - "C.4 conditioning_load_detraining SUPPRESSED (ACWR < 0.8 is the goal)"
+      - "C.4 fatigue_state interpretation modulated (volume undershoot intentional)"
+      - "reverse direction: e1rm falling or readiness flat during taper ->
+         taper_not_producing_freshness (informational, early warning)"
+
+# =============================================================================
+# SECTION 5 — C-D INTEGRATION (D.5)
+# =============================================================================
+
+integration:
+  deload_resolution:
+    reactive_advances_planned:
+      condition: "C.5 deload_proposal AND planned_deload <= 10 days ahead"
+      resolution: "advance the planned week; intermediate standard weeks
+                   shift or absorb"
+      flag: planned_deload_advanced
+    reactive_after_recent_planned:
+      condition: "deload signals within 21d suppression post planned_deload
+                  AND fatigue_state == overreached"
+      resolution: flag_only
+      flag: planned_deload_insufficient
+      meaning: "recipe too light or mesocycle too aggressive — structural signal"
+    reactive_standalone:
+      condition: "proposal with no planned_deload within ±10 days"
+      resolution: "insert ad-hoc deload week; rest shifts/absorbs;
+                   deviation recorded in instance"
+
+  fatigue_modulates_materialization:
+    fresh_normal: "materialize per plan"
+    accumulating: "suggest HOLD: repeat previous week's modifiers
+                   (progression paused, not lost)"
+    overreached: "do not materialize standard — offer deload (enters D.5.1)"
+    flag: progression_held_by_fatigue_state
+
+  shift_vs_absorb:
+    default: shift            # later dates move; mesocycle lasts +1 week
+    event_anchored: absorb    # collision with A/B event: remove the lightest
+                              # standard week; taper and event NEVER move
+    flags: [mesocycle_weeks_shifted, mesocycle_week_absorbed_for_event]
+
+  volume_status_feeds_scaling:
+    exceeded_2w: "trim group accessories at materialization"
+    below_mev_and_goal_includes: "flag: suggest +1-2 sets"
+    emphasis_hook: "MARKED (D.3): emphasis/specialization will be exactly this
+                    with asymmetric landmarks — infrastructure ready"
+
+  authority: "every D.5 resolution is suggest (Model C, consistent)"
+
+# =============================================================================
+# SECTION 6 — STATUS
+# =============================================================================
+
+status:
+  models_catalog: periodization_models.yaml
+  worked_examples: template_examples.yaml
+  new_flags: 26
+  new_functions: 11
+  decisions_user:
+    - "days_span 5-10 for generator variety"
+    - "interference warnings = v3 generator constraints"
+    - "deload threshold 4-7 inverse to level"
+    - "tags with promotion criterion (base/off_season)"

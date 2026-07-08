@@ -1,0 +1,27 @@
+# ===================================================================
+# Perfil de MUESTRA (no es el perfil real de Martin — eso es producto).
+# Sirve de fixture para los tests del generador y de ejemplo del schema.
+# HYROX-flavored: hubs de fuerza + tiempos de ergs + estaciones débiles.
+# ===================================================================
+event:
+  date: "2026-09-13"
+  discipline: hyrox
+strength:
+  back_squat_e1rm: 150       # global_hub (ancla del motor de fuerza relativa P7)
+  deadlift_conventional_e1rm: 180
+  bench_press_barbell_e1rm: 110
+  overhead_press_e1rm: 70
+conditioning:
+  run_1k_sec: 240
+  row_500m_sec: 95
+  ski_500m_sec: 100
+weak_stations: [pull_h, locomotion]   # sesga selección hacia tirón horizontal y sled/erg
+availability:
+  days_per_week: 5
+  session_minutes: 75
+  equipment: [barbell, dumbbell, kettlebell, bodyweight, pull_up_bar, sled, erg_row, erg_ski, erg_bike, wall_ball, box]
+injuries: []
+calibration:
+  signal_confidence: high
+  deload_style: default
+  bar_increment_kg: 2.5

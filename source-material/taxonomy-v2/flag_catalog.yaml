@@ -1,0 +1,2001 @@
+# =============================================================================
+# Flag Catalog — Training Taxonomy v2.0
+# =============================================================================
+# Companion to: taxonomy_v2.yaml, taxonomy_v2_methods_part2.yaml,
+#               validator_functions_spec.md
+#
+# All flags the validator can produce, with:
+#   - id (unique snake_case)
+#   - severity: informational | structural_hard | viability
+#   - level: ok | warning_mild | warning_strong | hard_fail (viability only)
+#   - message_template: human-readable string with {placeholders}
+#   - detail_schema: which of the 4 base patterns it uses, or 'custom'
+#   - suggestion_template: optional auto-generated suggestion
+#   - related_methods: which methods can raise this flag
+#
+# Detail schemas (from A.9.3.4):
+#   component_pattern   — flags about specific components
+#   viability_pattern   — flags about physiological viability
+#   drift_pattern       — flags suggesting alternative method
+#   consistency_pattern — flags about internal consistency
+#   custom              — flag-specific schema
+# =============================================================================
+
+version: "2.0"
+parent: "taxonomy_v2.yaml"
+total_flags_catalogued: 177
+
+# =============================================================================
+# DETAIL SCHEMAS (base patterns from A.9.3.4)
+# =============================================================================
+
+detail_schemas:
+
+  component_pattern:
+    description: "Flags about specific components in a multi-component block"
+    fields:
+      component_index: integer
+      component_name: string
+      expected_value: any
+      actual_value: any
+      pattern_declared: "string | null"
+
+  viability_pattern:
+    description: "Flags about physiological viability"
+    fields:
+      metric_name: string
+      threshold_value: number
+      actual_value: number
+      delta: number
+      delta_pct: number
+      level_thresholds:
+        warning_mild: "range"
+        warning_strong: "range"
+        hard_fail: "range"
+
+  drift_pattern:
+    description: "Flags suggesting an alternative method captures intent better"
+    fields:
+      current_method: string
+      current_variant: string
+      suggested_method: string
+      suggested_variant: "string | null"
+      matching_indicators: "[string]"
+
+  consistency_pattern:
+    description: "Flags about internal data consistency"
+    fields:
+      computed_value: any
+      declared_value: any
+      delta: any
+      field_name: string
+
+# =============================================================================
+# FLAG CATALOG
+# =============================================================================
+
+flags:
+
+  # ---------------------------------------------------------------------------
+  # SECTION A — Zone classification flags (foundational)
+  # ---------------------------------------------------------------------------
+
+  no_coherent_zone:
+    id: no_coherent_zone
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "No coherent zone classification (max score {max_score} < threshold 0.70)."
+    detail_schema: custom
+    detail_fields:
+      max_score: number
+      scores_per_zone: "map<zone, float>"
+      threshold: number
+    suggestion_template: "Review reps, load, and RIR. Values may be outside any zone's range."
+    related_methods: [straight, cluster, drop, rest_pause, amrap, pyramid, emom, contrast]
+
+  zone_declared_inconsistent_with_inferred:
+    id: zone_declared_inconsistent_with_inferred
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "Declared zone {zone_declared} differs from inferred zone {zone_inferred}."
+    detail_schema: consistency_pattern
+    suggestion_template: "Verify if the declared zone is intentional, or adjust parameters."
+    related_methods: [straight, cluster, drop, rest_pause, amrap, pyramid, emom, contrast, complex]
+
+  # ---------------------------------------------------------------------------
+  # SECTION B — Viability flags (graduated by level)
+  # ---------------------------------------------------------------------------
+
+  overprescribed_or_load_too_high:
+    id: overprescribed_or_load_too_high
+    applies_at: block
+    severity: viability
+    level_computation: "based on delta_pct"
+    message_template: "Prescribed {reps_target} reps at {load_pct}% 1RM; theoretical max is {reps_max_teorico} (delta {delta_pct:+}%)."
+    detail_schema: viability_pattern
+    level_thresholds:
+      warning_mild: "0 < delta_pct <= 15"
+      warning_strong: "15 < delta_pct <= 30"
+      hard_fail: "delta_pct > 30"
+    suggestion_template: "Reduce load to ~{suggested_load}% or reduce reps to ~{suggested_reps}."
+    related_methods: [straight, cluster, drop, rest_pause, amrap, pyramid, emom]
+
+  underloaded_for_rep_range:
+    id: underloaded_for_rep_range
+    applies_at: block
+    severity: viability
+    level: warning_mild
+    message_template: "Load {load_pct}% is low for {reps_target} reps (max teorico {reps_max_teorico} reps, delta {delta:+})."
+    detail_schema: viability_pattern
+    suggestion_template: "Consider increasing load to ~{suggested_load}% for this rep range."
+    related_methods: [straight, cluster, drop, rest_pause, pyramid, emom]
+
+  near_max_effort:
+    id: near_max_effort
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "Prescription near theoretical maximum (delta {delta:+}). Limited margin."
+    detail_schema: viability_pattern
+    suggestion_template: null
+    related_methods: [straight, cluster, drop, rest_pause, pyramid, emom]
+
+  # ---------------------------------------------------------------------------
+  # SECTION C — Cluster-specific flags
+  # ---------------------------------------------------------------------------
+
+  cluster_intra_rest_too_short:
+    id: cluster_intra_rest_too_short
+    applies_at: block
+    severity: viability
+    level: warning_mild
+    message_template: "Intra-set rest {rest_intra_set_sec}s is below canonical range (10-30s)."
+    detail_schema: viability_pattern
+    suggestion_template: "Consider increasing rest to 15-25s to preserve velocity per cluster."
+    related_methods: [cluster]
+
+  cluster_intra_rest_too_long:
+    id: cluster_intra_rest_too_long
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Intra-set rest {rest_intra_set_sec}s exceeds extended range (>30s). Crosses frontier with rest_pause."
+    detail_schema: consistency_pattern
+    suggestion_template: "Reduce rest or consider rest_pause method."
+    related_methods: [cluster]
+
+  cluster_load_too_low_for_quality:
+    id: cluster_load_too_low_for_quality
+    applies_at: block
+    severity: viability
+    level: warning_strong
+    message_template: "Intent is 'quality' but load {load_pct}% is below 75%. Cluster utility limited."
+    detail_schema: viability_pattern
+    suggestion_template: "Increase load to ~80%+ or change intent to density/accumulation."
+    related_methods: [cluster]
+
+  cluster_total_reps_inconsistent:
+    id: cluster_total_reps_inconsistent
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Declared total reps {declared_value} != computed {computed_value} (reps_per_cluster × clusters_per_set × sets)."
+    detail_schema: consistency_pattern
+    suggestion_template: "Adjust reps_per_cluster, clusters_per_set, sets, or total."
+    related_methods: [cluster]
+
+  cluster_size_exceeds_zone_reps:
+    id: cluster_size_exceeds_zone_reps
+    applies_at: block
+    severity: viability
+    level: warning_strong
+    message_template: "reps_per_cluster {reps_per_cluster} exceeds max reps {zone_max_reps} for declared zone {zone}."
+    detail_schema: viability_pattern
+    suggestion_template: "Reduce reps_per_cluster or change declared zone."
+    related_methods: [cluster]
+
+  cluster_variant_params_inconsistent:
+    id: cluster_variant_params_inconsistent
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Parameter {field_name}={actual_value} outside variant {variant} canonical range {expected_range}."
+    detail_schema: consistency_pattern
+    suggestion_template: "Adjust parameter or change variant."
+    related_methods: [cluster, drop, rest_pause, amrap, pyramid, emom, contrast, complex]
+
+  # ---------------------------------------------------------------------------
+  # SECTION D — Drop-specific flags
+  # ---------------------------------------------------------------------------
+
+  drop_pct_below_minimum:
+    id: drop_pct_below_minimum
+    applies_at: block
+    severity: viability
+    level: warning_mild
+    message_template: "Drop {drop_pct_per_drop}% is below canonical minimum (15%). Limited intensification effect."
+    detail_schema: viability_pattern
+    suggestion_template: "Increase drop_pct_per_drop to at least 15%."
+    related_methods: [drop]
+
+  drop_pct_above_maximum:
+    id: drop_pct_above_maximum
+    applies_at: block
+    severity: viability
+    level: warning_strong
+    message_template: "Drop {drop_pct_per_drop}% exceeds canonical maximum (30%). Excessive load reduction."
+    detail_schema: viability_pattern
+    suggestion_template: "Reduce drop_pct_per_drop or split into multiple drops."
+    related_methods: [drop]
+
+  drop_rest_too_long:
+    id: drop_rest_too_long
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Rest between drops {rest_between_drops_sec}s exceeds 15s. Crosses frontier with rest_pause."
+    detail_schema: consistency_pattern
+    suggestion_template: "Reduce rest or consider rest_pause method."
+    related_methods: [drop]
+
+  drop_initial_load_too_low:
+    id: drop_initial_load_too_low
+    applies_at: block
+    severity: viability
+    level: warning_strong
+    message_template: "Initial load {first_load_pct}% is below 60%. Drop intensification not effective."
+    detail_schema: viability_pattern
+    suggestion_template: "Increase initial load to at least 65-70%."
+    related_methods: [drop]
+
+  drop_initial_load_too_high:
+    id: drop_initial_load_too_high
+    applies_at: block
+    severity: viability
+    level: warning_strong
+    message_template: "Initial load {first_load_pct}% exceeds 85%. Too few reps before failure for drop to be useful."
+    detail_schema: viability_pattern
+    suggestion_template: "Reduce initial load to 70-80% range."
+    related_methods: [drop]
+
+  drop_count_excessive:
+    id: drop_count_excessive
+    applies_at: block
+    severity: viability
+    level: warning_strong
+    message_template: "Drop count {drops_count} exceeds 5. Significant fatigue and limited returns."
+    detail_schema: viability_pattern
+    suggestion_template: "Reduce drops_count or split into multiple sets."
+    related_methods: [drop]
+
+  drop_variant_params_inconsistent:
+    id: drop_variant_params_inconsistent
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Parameter {field_name}={actual_value} outside variant {variant} range."
+    detail_schema: consistency_pattern
+    suggestion_template: "Adjust parameter or change variant."
+    related_methods: [drop]
+
+  mechanical_drop_no_progression_declared:
+    id: mechanical_drop_no_progression_declared
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Variant mechanical_drop requires mechanical_progression list."
+    detail_schema: consistency_pattern
+    suggestion_template: "Declare mechanical_progression with {drops_count + 1} steps."
+    related_methods: [drop]
+
+  mechanical_drop_progression_length_mismatch:
+    id: mechanical_drop_progression_length_mismatch
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "mechanical_progression length {actual_value} != drops_count + 1 ({expected_value})."
+    detail_schema: consistency_pattern
+    suggestion_template: "Adjust list length or drops_count."
+    related_methods: [drop]
+
+  mechanical_drop_rom_changes_exercise:
+    id: mechanical_drop_rom_changes_exercise
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "Mechanism is range_of_motion but exercise_ref changes across steps."
+    detail_schema: component_pattern
+    suggestion_template: "If exercise changes, mechanism is likely leverage or assistance, not range_of_motion."
+    related_methods: [drop]
+
+  # ---------------------------------------------------------------------------
+  # SECTION E — Rest-pause flags
+  # ---------------------------------------------------------------------------
+
+  rp_activation_load_too_low:
+    id: rp_activation_load_too_low
+    applies_at: block
+    severity: viability
+    level: warning_strong
+    message_template: "Activation load {load_pct}% is below 65%. Rest-pause not effective."
+    detail_schema: viability_pattern
+    suggestion_template: "Increase load to at least 70%."
+    related_methods: [rest_pause]
+
+  rp_activation_load_too_high:
+    id: rp_activation_load_too_high
+    applies_at: block
+    severity: viability
+    level: warning_strong
+    message_template: "Activation load {load_pct}% exceeds 88%. Mini-tandas not viable."
+    detail_schema: viability_pattern
+    suggestion_template: "Reduce load to 75-82% range for productive mini-tandas."
+    related_methods: [rest_pause]
+
+  rp_rest_too_short:
+    id: rp_rest_too_short
+    applies_at: block
+    severity: viability
+    level: warning_mild
+    message_template: "Intra-set rest {rest_intra_set_sec}s below 10s. Recovery insufficient."
+    detail_schema: viability_pattern
+    suggestion_template: "Increase rest to 10-20s."
+    related_methods: [rest_pause]
+
+  rp_rest_too_long:
+    id: rp_rest_too_long
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Intra-set rest {rest_intra_set_sec}s exceeds 20s. Crosses frontier with cluster."
+    detail_schema: consistency_pattern
+    suggestion_template: "Reduce rest or consider cluster method."
+    related_methods: [rest_pause]
+
+  rp_mini_tandas_unrealistic:
+    id: rp_mini_tandas_unrealistic
+    applies_at: block
+    severity: viability
+    level: warning_strong
+    message_template: "Declared mini_tandas_count {actual_value} unrealistic for load {load_pct}% (max realistic ~{expected_value})."
+    detail_schema: viability_pattern
+    suggestion_template: "Reduce mini_tandas_count or reduce load."
+    related_methods: [rest_pause]
+
+  rp_variant_params_inconsistent:
+    id: rp_variant_params_inconsistent
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Parameter {field_name}={actual_value} outside variant {variant} range."
+    detail_schema: consistency_pattern
+    suggestion_template: "Adjust parameter or change variant."
+    related_methods: [rest_pause]
+
+  rp_activation_rir_above_threshold:
+    id: rp_activation_rir_above_threshold
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Activation RIR {actual_value} > 2. Rest-pause requires activation near failure."
+    detail_schema: consistency_pattern
+    suggestion_template: "Reduce activation_rir to 0-1 or consider cluster method."
+    related_methods: [rest_pause]
+
+  # ---------------------------------------------------------------------------
+  # SECTION F — AMRAP flags
+  # ---------------------------------------------------------------------------
+
+  amrap_load_too_low:
+    id: amrap_load_too_low
+    applies_at: block
+    severity: viability
+    level: warning_mild
+    message_template: "Load {load_pct}% below 50%. AMRAP gives little useful information."
+    detail_schema: viability_pattern
+    suggestion_template: "Increase load to 60%+ for informative test."
+    related_methods: [amrap]
+
+  amrap_load_too_high:
+    id: amrap_load_too_high
+    applies_at: block
+    severity: viability
+    level: warning_strong
+    message_template: "Load {load_pct}% above 90%. AMRAP gives few reps, low information value."
+    detail_schema: viability_pattern
+    suggestion_template: "Reduce load to 70-85% for productive AMRAP."
+    related_methods: [amrap]
+
+  amrap_actual_below_expected:
+    id: amrap_actual_below_expected
+    applies_at: execution
+    severity: informational
+    level: null
+    message_template: "Reps actual {reps_actual} below expected {expected_value} (delta {delta:+}). Possible fatigue or overestimated 1RM."
+    detail_schema: consistency_pattern
+    suggestion_template: "Review 1RM calibration or fatigue state."
+    related_methods: [amrap]
+
+  amrap_actual_above_expected:
+    id: amrap_actual_above_expected
+    applies_at: execution
+    severity: informational
+    level: null
+    message_template: "Reps actual {reps_actual} above expected {expected_value} (delta {delta:+}). 1RM may be underestimated."
+    detail_schema: consistency_pattern
+    suggestion_template: "Consider revising 1RM upward."
+    related_methods: [amrap]
+
+  amrap_variant_params_inconsistent:
+    id: amrap_variant_params_inconsistent
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Parameter {field_name}={actual_value} outside variant {variant} range."
+    detail_schema: consistency_pattern
+    suggestion_template: "Adjust parameter or change variant."
+    related_methods: [amrap]
+
+  amrap_time_cap_missing:
+    id: amrap_time_cap_missing
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Variant time_capped requires time_cap_sec."
+    detail_schema: consistency_pattern
+    suggestion_template: "Declare time_cap_sec."
+    related_methods: [amrap]
+
+  amrap_rep_cap_missing:
+    id: amrap_rep_cap_missing
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Variant rep_capped requires rep_cap."
+    detail_schema: consistency_pattern
+    suggestion_template: "Declare rep_cap."
+    related_methods: [amrap]
+
+  # ---------------------------------------------------------------------------
+  # SECTION G — Pyramid flags
+  # ---------------------------------------------------------------------------
+
+  pyramid_load_not_monotonic:
+    id: pyramid_load_not_monotonic
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Pyramid {variant} requires monotonic load progression. Violation at set {component_index}."
+    detail_schema: component_pattern
+    suggestion_template: "Adjust load progression or change variant."
+    related_methods: [pyramid]
+
+  pyramid_inverse_relation_violated:
+    id: pyramid_inverse_relation_violated
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Pyramid requires inverse relation between load and reps. Violation: load and reps both change in same direction."
+    detail_schema: consistency_pattern
+    suggestion_template: "Adjust reps progression to be opposite to load progression."
+    related_methods: [pyramid]
+
+  pyramid_top_set_outside_zone:
+    id: pyramid_top_set_outside_zone
+    applies_at: block
+    severity: viability
+    level: warning_mild
+    message_template: "Top set ({top_set_load}%, {top_set_reps} reps) outside declared zone {zone}."
+    detail_schema: viability_pattern
+    suggestion_template: "Adjust top set parameters or declared zone."
+    related_methods: [pyramid]
+
+  pyramid_total_volume_too_low:
+    id: pyramid_total_volume_too_low
+    applies_at: block
+    severity: viability
+    level: warning_mild
+    message_template: "Total reps {total_reps} below 25. Pyramid loses purpose."
+    detail_schema: viability_pattern
+    suggestion_template: "Increase sets_count or per-set reps."
+    related_methods: [pyramid]
+
+  pyramid_total_volume_too_high:
+    id: pyramid_total_volume_too_high
+    applies_at: block
+    severity: viability
+    level: warning_strong
+    message_template: "Total reps {total_reps} exceeds 50. Quality may degrade."
+    detail_schema: viability_pattern
+    suggestion_template: "Reduce sets_count or per-set reps."
+    related_methods: [pyramid]
+
+  pyramid_variant_params_inconsistent:
+    id: pyramid_variant_params_inconsistent
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Parameter {field_name}={actual_value} outside variant {variant} range."
+    detail_schema: consistency_pattern
+    suggestion_template: "Adjust parameter or change variant."
+    related_methods: [pyramid]
+
+  pyramid_wave_count_inconsistent:
+    id: pyramid_wave_count_inconsistent
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Wave variant requires sets_per_wave == 3. Got {actual_value}."
+    detail_schema: consistency_pattern
+    suggestion_template: "Set sets_per_wave to 3."
+    related_methods: [pyramid]
+
+  # ---------------------------------------------------------------------------
+  # SECTION H — EMOM flags
+  # ---------------------------------------------------------------------------
+
+  emom_work_exceeds_interval:
+    id: emom_work_exceeds_interval
+    applies_at: block
+    severity: viability
+    level_computation: "based on overflow magnitude"
+    message_template: "Estimated work {estimated_work_sec}s exceeds 85% of interval {interval_sec}s."
+    detail_schema: viability_pattern
+    level_thresholds:
+      warning_strong: "estimated_work_sec / interval_sec in [0.85, 0.95]"
+      hard_fail: "estimated_work_sec / interval_sec > 0.95"
+    suggestion_template: "Reduce reps per interval or increase interval_sec."
+    related_methods: [emom]
+
+  emom_work_too_light_for_interval:
+    id: emom_work_too_light_for_interval
+    applies_at: block
+    severity: viability
+    level: warning_mild
+    message_template: "Estimated work {estimated_work_sec}s is less than 20% of interval. Too much rest."
+    detail_schema: viability_pattern
+    suggestion_template: "Increase reps per interval or reduce interval_sec."
+    related_methods: [emom]
+
+  emom_interval_too_short:
+    id: emom_interval_too_short
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Interval {interval_sec}s below 20s. Insufficient for productive work."
+    detail_schema: consistency_pattern
+    suggestion_template: "Increase interval_sec to 30+."
+    related_methods: [emom]
+
+  emom_interval_too_long:
+    id: emom_interval_too_long
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "Interval {interval_sec}s exceeds 4 min. Functionally similar to straight with timer."
+    detail_schema: drift_pattern
+    suggestion_template: "Consider straight sets with declared rest."
+    related_methods: [emom]
+
+  emom_duration_too_long:
+    id: emom_duration_too_long
+    applies_at: block
+    severity: viability
+    level: warning_strong
+    message_template: "Total duration {total_duration_min} min exceeds 30. Quality risk."
+    detail_schema: viability_pattern
+    suggestion_template: "Reduce duration or split into multiple blocks."
+    related_methods: [emom]
+
+  emom_alternating_rotation_empty:
+    id: emom_alternating_rotation_empty
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Variant alternating requires exercises_rotation list."
+    detail_schema: consistency_pattern
+    suggestion_template: "Declare at least 2 exercises in exercises_rotation."
+    related_methods: [emom]
+
+  emom_variant_params_inconsistent:
+    id: emom_variant_params_inconsistent
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Parameter {field_name}={actual_value} outside variant {variant} range."
+    detail_schema: consistency_pattern
+    suggestion_template: "Adjust parameter or change variant."
+    related_methods: [emom]
+
+  emom_ascending_terminal_load_too_high:
+    id: emom_ascending_terminal_load_too_high
+    applies_at: block
+    severity: viability
+    level: warning_strong
+    message_template: "Final load {final_load_pct}% exceeds 95%. Likely unattainable."
+    detail_schema: viability_pattern
+    suggestion_template: "Reduce starting_load_pct or load_increment_pct."
+    related_methods: [emom]
+
+  emom_ascending_exceeds_1rm:
+    id: emom_ascending_exceeds_1rm
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Final load {final_load_pct}% exceeds 100% 1RM. Impossible."
+    detail_schema: viability_pattern
+    suggestion_template: "Reduce starting_load_pct, load_increment_pct, or duration."
+    related_methods: [emom]
+
+  emom_collapsed_to_amrap_timecapped:
+    id: emom_collapsed_to_amrap_timecapped
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "Single interval EMOM is functionally AMRAP time_capped."
+    detail_schema: drift_pattern
+    suggestion_template: "Consider amrap/time_capped for explicit semantics."
+    related_methods: [emom]
+
+  # ---------------------------------------------------------------------------
+  # SECTION I — Contrast flags
+  # ---------------------------------------------------------------------------
+
+  contrast_heavy_load_too_low:
+    id: contrast_heavy_load_too_low
+    applies_at: block
+    severity: viability
+    level: warning_strong
+    message_template: "Heavy component load {load_pct}% below 80%. PAP effect limited."
+    detail_schema: viability_pattern
+    suggestion_template: "Increase heavy component load to 80-90%."
+    related_methods: [contrast]
+
+  contrast_heavy_load_too_high:
+    id: contrast_heavy_load_too_high
+    applies_at: block
+    severity: viability
+    level: warning_strong
+    message_template: "Heavy component load {load_pct}% exceeds 95%. Fatigue exceeds potentiation."
+    detail_schema: viability_pattern
+    suggestion_template: "Reduce heavy component load to 85-90%."
+    related_methods: [contrast]
+
+  contrast_explosive_load_too_high:
+    id: contrast_explosive_load_too_high
+    applies_at: block
+    severity: viability
+    level: warning_strong
+    message_template: "Explosive component load {load_pct}% exceeds 60%. Velocity compromised."
+    detail_schema: viability_pattern
+    suggestion_template: "Reduce explosive load to 30-50% or use bodyweight."
+    related_methods: [contrast]
+
+  contrast_transition_too_short:
+    id: contrast_transition_too_short
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Transition rest {transition_rest_sec}s below 15s. No fatigue dissipation."
+    detail_schema: consistency_pattern
+    suggestion_template: "Increase transition rest to 30-60s."
+    related_methods: [contrast]
+
+  contrast_transition_too_long:
+    id: contrast_transition_too_long
+    applies_at: block
+    severity: viability
+    level: warning_strong
+    message_template: "Transition rest {transition_rest_sec}s exceeds 5 min. PAP window closed."
+    detail_schema: viability_pattern
+    suggestion_template: "Reduce transition rest to PAP window (30-90s)."
+    related_methods: [contrast]
+
+  contrast_components_same_pattern_violated:
+    id: contrast_components_same_pattern_violated
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "Components have different movement_pattern. Contrast typically uses same pattern."
+    detail_schema: component_pattern
+    suggestion_template: "Verify pattern intent. For antagonist superset, consider complex/superset."
+    related_methods: [contrast]
+
+  contrast_variant_params_inconsistent:
+    id: contrast_variant_params_inconsistent
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Parameter {field_name}={actual_value} outside variant {variant} range."
+    detail_schema: consistency_pattern
+    suggestion_template: "Adjust parameter or change variant."
+    related_methods: [contrast]
+
+  contrast_pair_count_excessive:
+    id: contrast_pair_count_excessive
+    applies_at: block
+    severity: viability
+    level: warning_strong
+    message_template: "Pair count {total_pairs} exceeds 8. Quality degradation likely."
+    detail_schema: viability_pattern
+    suggestion_template: "Reduce total_pairs to 4-6."
+    related_methods: [contrast]
+
+  french_contrast_components_count_wrong:
+    id: french_contrast_components_count_wrong
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "French contrast requires exactly 4 components. Got {actual_value}."
+    detail_schema: consistency_pattern
+    suggestion_template: "Use 4 components or change variant."
+    related_methods: [contrast]
+
+  french_contrast_roles_order_wrong:
+    id: french_contrast_roles_order_wrong
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "French contrast requires roles in canonical order: heavy_strength, heavy_plyo, loaded_explosive, unloaded_plyo."
+    detail_schema: component_pattern
+    suggestion_template: "Reorder components."
+    related_methods: [contrast]
+
+  contrast_roles_inconsistent_with_variant:
+    id: contrast_roles_inconsistent_with_variant
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Component roles {actual_value} don't match variant {variant} expected roles {expected_value}."
+    detail_schema: component_pattern
+    suggestion_template: "Adjust roles or change variant."
+    related_methods: [contrast]
+
+  # ---------------------------------------------------------------------------
+  # SECTION J — Complex common flags
+  # ---------------------------------------------------------------------------
+
+  complex_variant_params_inconsistent:
+    id: complex_variant_params_inconsistent
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Parameter {field_name}={actual_value} outside variant {variant} range."
+    detail_schema: consistency_pattern
+    suggestion_template: "Adjust parameter or change variant."
+    related_methods: [complex]
+
+  complex_components_count_invalid:
+    id: complex_components_count_invalid
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Component count {actual_value} outside range [{min}, {max}] for variant {variant}."
+    detail_schema: consistency_pattern
+    suggestion_template: "Adjust component count or change variant."
+    related_methods: [complex]
+
+  complex_rounds_count_excessive:
+    id: complex_rounds_count_excessive
+    applies_at: block
+    severity: viability
+    level: warning_strong
+    message_template: "Rounds count {total_rounds} excessive for variant {variant}."
+    detail_schema: viability_pattern
+    suggestion_template: "Reduce total_rounds."
+    related_methods: [complex]
+
+  complex_resembles_french_contrast:
+    id: complex_resembles_french_contrast
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "Block with 4 components in canonical roles resembles french_contrast."
+    detail_schema: drift_pattern
+    suggestion_template: "Consider contrast/french_contrast for explicit PAP semantics."
+    related_methods: [complex]
+
+  complex_family_mismatch_with_variant:
+    id: complex_family_mismatch_with_variant
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Declared family {declared_value} doesn't match variant {variant} family {computed_value}."
+    detail_schema: consistency_pattern
+    suggestion_template: "Align declared family with variant, or change variant."
+    related_methods: [complex]
+
+  complex_estimated_duration_excessive:
+    id: complex_estimated_duration_excessive
+    applies_at: block
+    severity: viability
+    level: warning_strong
+    message_template: "Estimated duration {estimated_total_min} min exceeds 45. Likely too long for single block."
+    detail_schema: viability_pattern
+    suggestion_template: "Split into multiple blocks or reduce content."
+    related_methods: [complex]
+
+  complex_estimated_duration_too_short:
+    id: complex_estimated_duration_too_short
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "Estimated duration {estimated_total_sec}s below 60. Block may be too thin."
+    detail_schema: viability_pattern
+    suggestion_template: "Increase content or merge with another block."
+    related_methods: [complex]
+
+  complex_component_exercise_undeclared:
+    id: complex_component_exercise_undeclared
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Component {component_index} has neither exercise_ref nor exercise_name."
+    detail_schema: component_pattern
+    suggestion_template: "Declare exercise_ref or exercise_name for each component."
+    related_methods: [complex]
+
+  complex_zone_spread_excessive:
+    id: complex_zone_spread_excessive
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "Block touches {zone_spread} distinct zones. Heterogeneous demand."
+    detail_schema: viability_pattern
+    suggestion_template: "Verify if heterogeneity is intentional."
+    related_methods: [complex]
+
+  complex_likely_misclassified_as_family:
+    id: complex_likely_misclassified_as_family
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "Parameters suggest family {suggested_family} rather than declared {current_family}."
+    detail_schema: drift_pattern
+    suggestion_template: "Consider changing variant to better match intent."
+    related_methods: [complex]
+
+  # ---------------------------------------------------------------------------
+  # SECTION K — Single load chain (SLC) specific
+  # ---------------------------------------------------------------------------
+
+  slc_load_exceeds_weakest_link:
+    id: slc_load_exceeds_weakest_link
+    applies_at: block
+    severity: viability
+    level: warning_strong
+    message_template: "Shared load exceeds 85% of weakest component's 1RM."
+    detail_schema: viability_pattern
+    suggestion_template: "Reduce shared_load or exclude limiting component."
+    related_methods: [complex]
+
+  slc_component_order_technically_unsafe:
+    id: slc_component_order_technically_unsafe
+    applies_at: block
+    severity: viability
+    level: warning_strong
+    message_template: "First component has low technical_complexity_index ({first_complexity}) while rest are higher (avg {avg_rest}). Technical risk under fatigue."
+    detail_schema: component_pattern
+    suggestion_template: "Move technically complex components to the start."
+    related_methods: [complex]
+
+  slc_rest_between_components_too_long:
+    id: slc_rest_between_components_too_long
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Rest between components {rest_between_components_sec}s exceeds 10s. Breaks chain semantics."
+    detail_schema: consistency_pattern
+    suggestion_template: "Reduce rest, or use independent_load_chain or circuit family."
+    related_methods: [complex]
+
+  slc_components_have_independent_loads:
+    id: slc_components_have_independent_loads
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Components declare independent loads. single_load_chain requires shared load."
+    detail_schema: component_pattern
+    suggestion_template: "Use shared_load at block level, or change family to independent_load_chain or contrast."
+    related_methods: [complex]
+
+  slc_load_metric_inappropriate_for_component:
+    id: slc_load_metric_inappropriate_for_component
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Shared load metric incompatible with component {component_index} ({component_name})."
+    detail_schema: component_pattern
+    suggestion_template: "Components like plyo/balistic need their own load metrics. Consider contrast/french_contrast."
+    related_methods: [complex]
+
+  slc_resembles_contrast_heavy_light:
+    id: slc_resembles_contrast_heavy_light
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "single_load_chain with 2 components and 15+ s rest resembles contrast/heavy_light."
+    detail_schema: drift_pattern
+    suggestion_template: "Consider contrast/heavy_light if PAP is the intent."
+    related_methods: [complex]
+
+  # ---------------------------------------------------------------------------
+  # SECTION L — Independent load chain (ILC) specific
+  # ---------------------------------------------------------------------------
+
+  giant_set_load_progression_unusual:
+    id: giant_set_load_progression_unusual
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "Giant set loads don't decrease monotonically. Unusual but valid."
+    detail_schema: component_pattern
+    suggestion_template: "Verify if non-decreasing progression is intentional."
+    related_methods: [complex]
+
+  giant_set_target_muscle_group_inconsistent:
+    id: giant_set_target_muscle_group_inconsistent
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "Components target diverse movement_patterns; giant_set expects same group."
+    detail_schema: component_pattern
+    suggestion_template: "If components are diverse, consider circuit/fixed_round_circuit."
+    related_methods: [complex]
+
+  pha_alternation_pattern_violated:
+    id: pha_alternation_pattern_violated
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Component {component_index} ({component_name}) is {actual_value}; expected {expected_value} per pattern {pattern_declared}."
+    detail_schema: component_pattern
+    suggestion_template: "Reorder components or change alternation_pattern to 'custom'."
+    related_methods: [complex]
+
+  pha_body_segments_undeclared:
+    id: pha_body_segments_undeclared
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "PHA requires body_segment declared for each component."
+    detail_schema: component_pattern
+    suggestion_template: "Declare body_segment for each component."
+    related_methods: [complex]
+
+  superset_resembles_contrast_heavy_light:
+    id: superset_resembles_contrast_heavy_light
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "Superset with same pattern + heavy/light loads + PAP-window rest resembles contrast/heavy_light."
+    detail_schema: drift_pattern
+    suggestion_template: "Consider contrast/heavy_light if PAP is the intent."
+    related_methods: [complex]
+
+  # ---------------------------------------------------------------------------
+  # SECTION M — Circuit specific
+  # ---------------------------------------------------------------------------
+
+  circuit_component_work_metric_missing:
+    id: circuit_component_work_metric_missing
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Component {component_index} has no work metric (reps, duration_sec, or distance_m)."
+    detail_schema: component_pattern
+    suggestion_template: "Declare at least one work metric per component."
+    related_methods: [complex]
+
+  circuit_duration_mismatch_target:
+    id: circuit_duration_mismatch_target
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "Estimated duration {estimated_total_min} min differs from target {target_total_duration_min} min by >30%."
+    detail_schema: viability_pattern
+    suggestion_template: "Adjust reps/components/rest, or update target_total_duration_min."
+    related_methods: [complex]
+
+  tcc_rounds_too_few:
+    id: tcc_rounds_too_few
+    applies_at: block
+    severity: viability
+    level: warning_mild
+    message_template: "Estimated rounds {estimated_rounds} below 3 within time_cap. Structure underused."
+    detail_schema: viability_pattern
+    suggestion_template: "Increase time_cap or reduce reps per round."
+    related_methods: [complex]
+
+  tcc_components_too_light:
+    id: tcc_components_too_light
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "Estimated rounds {estimated_rounds} exceeds 15. Components may be too light."
+    detail_schema: viability_pattern
+    suggestion_template: "Increase reps per component or include heavier component."
+    related_methods: [complex]
+
+  tcc_target_rounds_mismatch_estimate:
+    id: tcc_target_rounds_mismatch_estimate
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "Estimated rounds {estimated_rounds} differs from target_rounds {target_rounds} by >3."
+    detail_schema: viability_pattern
+    suggestion_template: "Verify target_rounds or adjust components."
+    related_methods: [complex]
+
+  chipper_reps_progression_unusual:
+    id: chipper_reps_progression_unusual
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "Chipper reps don't decrease monotonically. Unusual structure."
+    detail_schema: component_pattern
+    suggestion_template: "Verify intent. Chippers typically front-load high reps."
+    related_methods: [complex]
+
+  chipper_estimated_exceeds_cap:
+    id: chipper_estimated_exceeds_cap
+    applies_at: block
+    severity: viability
+    level: hard_fail
+    message_template: "Estimated duration {estimated_total_sec}s approaches/exceeds time_cap {time_cap_sec}s."
+    detail_schema: viability_pattern
+    suggestion_template: "Reduce reps, components, or increase time_cap."
+    related_methods: [complex]
+
+  chipper_estimated_duration_exhaustive:
+    id: chipper_estimated_duration_exhaustive
+    applies_at: block
+    severity: viability
+    level_computation: "based on duration thresholds (A.8.8)"
+    message_template: "Chipper estimated at {estimated_total_min} min without time_cap."
+    detail_schema: viability_pattern
+    level_thresholds:
+      warning_mild: "20 <= duration_min < 30"
+      warning_strong: "30 <= duration_min <= 45"
+      hard_fail: "duration_min > 45"
+    suggestion_template: "Add time_cap_min or reduce content."
+    related_methods: [complex]
+
+  tabata_load_too_high_for_duration:
+    id: tabata_load_too_high_for_duration
+    applies_at: block
+    severity: viability
+    level: hard_fail
+    message_template: "Tabata requires sustainable intensity for 20s. Load {load_pct}% prohibitively high."
+    detail_schema: viability_pattern
+    suggestion_template: "Reduce load below 60% or change to emom/every_n_seconds with longer interval."
+    related_methods: [complex]
+
+  # ---------------------------------------------------------------------------
+  # SECTION N — Exercise count flags (generalized from A.9.7)
+  # ---------------------------------------------------------------------------
+
+  straight_exercise_count_invalid:
+    id: straight_exercise_count_invalid
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Straight requires exactly 1 exercise. Got {actual_value}."
+    detail_schema: consistency_pattern
+    suggestion_template: "Use 1 exercise. For multi-exercise patterns, consider complex/circuit or contrast."
+    related_methods: [straight]
+
+  cluster_exercise_count_invalid:
+    id: cluster_exercise_count_invalid
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Cluster requires exactly 1 exercise. Got {actual_value}."
+    detail_schema: consistency_pattern
+    suggestion_template: "Use 1 exercise. For multi-exercise patterns, consider complex/single_load_chain."
+    related_methods: [cluster]
+
+  drop_exercise_count_invalid:
+    id: drop_exercise_count_invalid
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Drop requires exactly 1 exercise (except mechanical_drop which allows 2-5)."
+    detail_schema: consistency_pattern
+    suggestion_template: "Use 1 exercise, or change variant to mechanical_drop."
+    related_methods: [drop]
+
+  rest_pause_exercise_count_invalid:
+    id: rest_pause_exercise_count_invalid
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Rest-pause requires exactly 1 exercise. Got {actual_value}."
+    detail_schema: consistency_pattern
+    suggestion_template: "Use 1 exercise."
+    related_methods: [rest_pause]
+
+  amrap_exercise_count_invalid:
+    id: amrap_exercise_count_invalid
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "AMRAP requires exactly 1 exercise. Got {actual_value}."
+    detail_schema: consistency_pattern
+    suggestion_template: "Use 1 exercise. For multi-exercise within time_cap, use complex/time_capped_circuit."
+    related_methods: [amrap]
+
+  pyramid_exercise_count_invalid:
+    id: pyramid_exercise_count_invalid
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Pyramid requires exactly 1 exercise. Got {actual_value}."
+    detail_schema: consistency_pattern
+    suggestion_template: "Use 1 exercise. For pyramid across multiple exercises, decompose into separate blocks."
+    related_methods: [pyramid]
+
+  emom_exercise_count_invalid:
+    id: emom_exercise_count_invalid
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "EMOM requires 1 exercise (or 2-4 for variant alternating). Got {actual_value}."
+    detail_schema: consistency_pattern
+    suggestion_template: "Use 1 exercise or change variant to alternating."
+    related_methods: [emom]
+
+  contrast_exercise_count_invalid:
+    id: contrast_exercise_count_invalid
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Contrast requires {expected_value} components per variant {variant}. Got {actual_value}."
+    detail_schema: consistency_pattern
+    suggestion_template: "Adjust component count or change variant."
+    related_methods: [contrast]
+
+  complex_exercise_count_invalid:
+    id: complex_exercise_count_invalid
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Complex variant {variant} requires {expected_value} components. Got {actual_value}."
+    detail_schema: consistency_pattern
+    suggestion_template: "Adjust component count or change variant."
+    related_methods: [complex]
+
+  # ---------------------------------------------------------------------------
+  # SECTION O — Intent flags (from A.9.8)
+  # ---------------------------------------------------------------------------
+
+  intent_declared_inconsistent_with_parameters:
+    id: intent_declared_inconsistent_with_parameters
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "Declared intent {declared_value} not in candidates {expected_value} per intent_resolution rules."
+    detail_schema: consistency_pattern
+    suggestion_template: "Verify intent declaration or adjust parameters to match."
+    related_methods: [straight, cluster, drop, rest_pause, amrap, pyramid, emom, contrast, complex]
+
+  # ---------------------------------------------------------------------------
+  # SECTION P — Prescription vs execution (from A.9.6)
+  # ---------------------------------------------------------------------------
+
+  prescribed_vs_executed_undershoot:
+    id: prescribed_vs_executed_undershoot
+    applies_at: execution
+    severity: viability
+    level_computation: "based on undershoot magnitude"
+    message_template: "Component {component_index}: executed {reps_actual} reps below target {reps_target} (delta {delta:+})."
+    detail_schema: viability_pattern
+    level_thresholds:
+      warning_mild: "-4 <= delta < -2"
+      warning_strong: "delta < -4"
+    suggestion_template: "Investigate fatigue, load calibration, or external factors."
+    related_methods: [straight, cluster, drop, rest_pause, pyramid, emom, contrast, complex]
+
+  prescribed_vs_executed_overshoot:
+    id: prescribed_vs_executed_overshoot
+    applies_at: execution
+    severity: informational
+    level: null
+    message_template: "Component {component_index}: executed {reps_actual} reps above target {reps_target}. 1RM may be underestimated."
+    detail_schema: consistency_pattern
+    suggestion_template: "Consider revising 1RM upward."
+    related_methods: [straight, cluster, drop, rest_pause, pyramid, emom, contrast, complex]
+
+  block_partial_execution:
+    id: block_partial_execution
+    applies_at: execution
+    severity: informational
+    level: null
+    message_template: "Block executed partially: {units_executed}/{units_total} work_units ({completion_rate_pct}%)."
+    detail_schema: custom
+    detail_fields:
+      completion_rate_pct: number
+      units_executed: integer
+      units_total: integer
+      reason_provided: "string | null"
+    suggestion_template: null
+    related_methods: [straight, cluster, drop, rest_pause, amrap, pyramid, emom, contrast, complex]
+
+  rep_capped_acted_as_straight:
+    id: rep_capped_acted_as_straight
+    applies_at: execution
+    severity: informational
+    level: null
+    message_template: "AMRAP/rep_capped consistently reaches rep_cap before RIR target. Functionally straight."
+    detail_schema: drift_pattern
+    suggestion_template: "Consider straight method with declared RIR."
+    related_methods: [amrap]
+
+  # ---------------------------------------------------------------------------
+  # SECTION Q — A.10 additions (antagonist_giant_set, multi_exercise_pyramid)
+  # ---------------------------------------------------------------------------
+
+  # antagonist_giant_set flags
+
+  ags_pair_index_invalid:
+    id: ags_pair_index_invalid
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Component {component_index} declares pair_index {actual_value}; expected in range [0, pairs_count-1]."
+    detail_schema: component_pattern
+    suggestion_template: "Adjust pair_index or pairs_count to match components."
+    related_methods: [complex]
+
+  ags_pair_count_mismatch:
+    id: ags_pair_count_mismatch
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Components per pair inconsistent. Each pair must have exactly 2 components."
+    detail_schema: consistency_pattern
+    suggestion_template: "Verify pair_index distribution: each pair_index value must appear exactly twice."
+    related_methods: [complex]
+
+  ags_role_in_pair_undeclared:
+    id: ags_role_in_pair_undeclared
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Component {component_index} missing role_in_pair (agonist/antagonist)."
+    detail_schema: component_pattern
+    suggestion_template: "Declare role_in_pair for each component."
+    related_methods: [complex]
+
+  ags_pair_not_antagonistic:
+    id: ags_pair_not_antagonistic
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "Pair {component_index} components share movement_pattern. Antagonist intent unclear."
+    detail_schema: component_pattern
+    suggestion_template: "Verify movement_patterns are truly antagonistic. If not, consider giant_set or accessory_complex."
+    related_methods: [complex]
+
+  ags_components_count_invalid:
+    id: ags_components_count_invalid
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "antagonist_giant_set requires 4-6 components (2-3 pairs × 2). Got {actual_value}."
+    detail_schema: consistency_pattern
+    suggestion_template: "Adjust components to pairs_count × 2."
+    related_methods: [complex]
+
+  # multi_exercise_pyramid flags
+
+  mep_load_not_monotonic_across_rounds:
+    id: mep_load_not_monotonic_across_rounds
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Load progression across rounds violates monotonicity. Round {component_index} breaks pattern."
+    detail_schema: component_pattern
+    suggestion_template: "Ensure load increases (or decreases) monotonically across rounds."
+    related_methods: [pyramid]
+
+  mep_reps_not_monotonic_inverse:
+    id: mep_reps_not_monotonic_inverse
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Reps progression doesn't inverse load progression. Pyramid principle violated."
+    detail_schema: consistency_pattern
+    suggestion_template: "Reps should decrease as load increases (and vice versa)."
+    related_methods: [pyramid]
+
+  mep_exercises_inconsistent_across_rounds:
+    id: mep_exercises_inconsistent_across_rounds
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Exercises differ between rounds. multi_exercise_pyramid requires same exercises every round."
+    detail_schema: component_pattern
+    suggestion_template: "Use the same exercise set in every round, or decompose into separate pyramid blocks."
+    related_methods: [pyramid]
+
+  mep_rounds_count_too_low:
+    id: mep_rounds_count_too_low
+    applies_at: block
+    severity: viability
+    level: warning_mild
+    message_template: "Rounds count {actual_value} below 3. Pyramid structure underused."
+    detail_schema: viability_pattern
+    suggestion_template: "Increase to at least 3 rounds for meaningful progression."
+    related_methods: [pyramid]
+
+  mep_total_volume_excessive:
+    id: mep_total_volume_excessive
+    applies_at: block
+    severity: viability
+    level: warning_strong
+    message_template: "Total reps across all rounds {total_reps} exceeds 100. Quality degradation likely."
+    detail_schema: viability_pattern
+    suggestion_template: "Reduce exercises_per_round, rounds_count, or per-round reps."
+    related_methods: [pyramid]
+
+  # ---------------------------------------------------------------------------
+  # SECTION S — Layer B additions (catalog-driven validation)
+  # ---------------------------------------------------------------------------
+
+  mechanical_drop_step_not_in_catalog:
+    id: mechanical_drop_step_not_in_catalog
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "Step {component_index} ({component_name}) not found in catalog. Falling back to heuristic validation."
+    detail_schema: component_pattern
+    suggestion_template: "Add the exercise/variation to the catalog for graph-validated progressions."
+    related_methods: [drop]
+
+  mechanical_drop_progression_invalid_path:
+    id: mechanical_drop_progression_invalid_path
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Transition {component_index}→{component_index_next} is neither an implicit ladder descent nor a regression edge with mechanism '{pattern_declared}'."
+    detail_schema: component_pattern
+    suggestion_template: "Reorder steps, change declared mechanism, or use catalog-connected variations."
+    related_methods: [drop]
+
+  mechanical_drop_demand_not_decreasing:
+    id: mechanical_drop_demand_not_decreasing
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Effective mechanical demand is not monotonically decreasing across the progression."
+    detail_schema: component_pattern
+    suggestion_template: "Mechanical drop requires strictly easier steps; verify variation deltas."
+    related_methods: [drop]
+
+  slc_weakest_link_low_confidence:
+    id: slc_weakest_link_low_confidence
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "Weakest-link identification has low confidence (ratio chain crosses 2+ hub jumps). Skipping hard validation."
+    detail_schema: viability_pattern
+    suggestion_template: "Declare a direct strength ratio for these exercises if this chain is used frequently."
+    related_methods: [complex]
+
+  slc_weakest_link_misidentified:
+    id: slc_weakest_link_misidentified
+    applies_at: block
+    severity: viability
+    level: warning_strong
+    message_template: "Shared load anchored to {declared_value} but computed weakest link is {computed_value}."
+    detail_schema: consistency_pattern
+    suggestion_template: "Anchor shared_load_pct_1rm_of_weakest to {computed_value}."
+    related_methods: [complex]
+
+  exercise_pattern_segment_mismatch:
+    id: exercise_pattern_segment_mismatch
+    applies_at: catalog_load
+    severity: informational
+    level: null
+    message_template: "Exercise declares movement_pattern '{pattern_declared}' (typical segment {expected_value}) but body_segment '{actual_value}'."
+    detail_schema: consistency_pattern
+    suggestion_template: "Verify classification; mismatch may be intentional (e.g. full-body expressions)."
+    related_methods: [straight, cluster, drop, rest_pause, amrap, pyramid, emom, contrast, complex]
+
+  catalog_edge_mechanism_possibly_mixed:
+    id: catalog_edge_mechanism_possibly_mixed
+    applies_at: catalog_load
+    severity: informational
+    level: null
+    message_template: "Edge {component_name} declares single mechanism but notes mention secondary mechanisms."
+    detail_schema: consistency_pattern
+    suggestion_template: "Audit trail for eventual migration to mechanisms array if mixed cases become frequent."
+    related_methods: []
+
+  ratio_composition_possibly_imprecise:
+    id: ratio_composition_possibly_imprecise
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "Validation consumed a composed ratio crossing {actual_value} inter-hub jumps (confidence: low)."
+    detail_schema: consistency_pattern
+    suggestion_template: "If this pair recurs, declare a direct pairwise ratio."
+    related_methods: [complex]
+
+
+  # ---------------------------------------------------------------------------
+  # SECTION T — Layer C additions (autoregulation)
+  # ---------------------------------------------------------------------------
+
+  muscle_volume_below_mev:
+    id: muscle_volume_below_mev
+    applies_at: microcycle_plus
+    severity: informational
+    level: null
+    message_template: "{group} a {actual_value} sets efectivos/7d, bajo MEV ({expected_value})."
+    detail_schema: viability_pattern
+    suggestion_template: "Estímulo insuficiente para progresar en {group}; considerar agregar volumen."
+    related_methods: []
+
+  muscle_volume_approaching_mrv:
+    id: muscle_volume_approaching_mrv
+    applies_at: microcycle_plus
+    severity: informational
+    level: null
+    message_template: "{group} cruzó MAV alto ({actual_value}/{expected_value} sets/7d)."
+    detail_schema: viability_pattern
+    suggestion_template: "Zona productiva alta; vigilar recuperación."
+    related_methods: []
+
+  muscle_volume_exceeded_mrv:
+    id: muscle_volume_exceeded_mrv
+    applies_at: microcycle_plus
+    severity: informational
+    level: null
+    message_template: "{group} a {actual_value} sets efectivos/7d, sobre MRV ({expected_value})."
+    detail_schema: viability_pattern
+    suggestion_template: "Recuperación comprometida; insumo para redistribución o deload local."
+    related_methods: []
+
+  indirect_volume_dominant:
+    id: indirect_volume_dominant
+    applies_at: microcycle_plus
+    severity: informational
+    level: null
+    message_template: ">60% del volumen de {group} es indirecto ({actual_value} de {total_reps} sets)."
+    detail_schema: viability_pattern
+    suggestion_template: "Verificar si la dominancia indirecta es intencional."
+    related_methods: []
+
+  conditioning_load_spike:
+    id: conditioning_load_spike
+    applies_at: microcycle_plus
+    severity: informational
+    level: null
+    message_template: "Carga de conditioning aguda {actual_value}x la cronica (umbral 1.5)."
+    detail_schema: viability_pattern
+    suggestion_template: "Techo preventivo sugerido sobre la carga de los proximos 7 dias."
+    related_methods: [emom, complex]
+
+  conditioning_load_detraining:
+    id: conditioning_load_detraining
+    applies_at: microcycle_plus
+    severity: informational
+    level: null
+    message_template: "Carga de conditioning aguda {actual_value}x la cronica (piso 0.8)."
+    detail_schema: viability_pattern
+    suggestion_template: "Posible destrenamiento; ignorar si estas en taper declarado."
+    related_methods: [emom, complex]
+
+  session_adjustment_budget_exceeded:
+    id: session_adjustment_budget_exceeded
+    applies_at: session
+    severity: informational
+    level: null
+    message_template: "Cuarto ajuste candidato en la sesion (presupuesto: 3)."
+    detail_schema: consistency_pattern
+    suggestion_template: "El problema es probablemente el plan, no el dia; revisar prescripciones."
+    related_methods: []
+
+  rest_pause_load_too_light:
+    id: rest_pause_load_too_light
+    applies_at: execution
+    severity: informational
+    level: null
+    message_template: "Activacion @RIR {actual_value}: la carga quedo corta para rest-pause."
+    detail_schema: viability_pattern
+    suggestion_template: "Rest-pause requiere activacion cerca del fallo (RIR <= 1)."
+    related_methods: [rest_pause]
+
+  e1rm_decline_detected:
+    id: e1rm_decline_detected
+    applies_at: microcycle_plus
+    severity: informational
+    level: null
+    message_template: "e1RM estimado de {exercise} cayo {actual_value}% en 3 sesiones."
+    detail_schema: viability_pattern
+    suggestion_template: "Fatiga objetiva; escala a evaluacion de fatigue_state."
+    related_methods: []
+
+  stale_progress_detected:
+    id: stale_progress_detected
+    applies_at: microcycle_plus
+    severity: informational
+    level: null
+    message_template: "e1RM de {exercise} plano 4 semanas con volumen productivo."
+    detail_schema: drift_pattern
+    suggestion_template: "Candidato a rotacion de metodo/variante (sugerencia concreta: v3)."
+    related_methods: []
+
+  readiness_chronic_low:
+    id: readiness_chronic_low
+    applies_at: microcycle_plus
+    severity: informational
+    level: null
+    message_template: "Readiness {actual_value} bajo baseline sostenido 3+ dias."
+    detail_schema: viability_pattern
+    suggestion_template: "Escala a evaluacion de deload."
+    related_methods: []
+
+  green_light_day:
+    id: green_light_day
+    applies_at: session
+    severity: informational
+    level: null
+    message_template: "Readiness alta (+{actual_value} vs baseline) con estado fresco."
+    detail_schema: viability_pattern
+    suggestion_template: "Buen dia para aplicar la progresion planificada o intentar top sets."
+    related_methods: []
+
+  pain_reported:
+    id: pain_reported
+    applies_at: session
+    severity: informational
+    level: null
+    message_template: "Dolor {actual_value}/10 reportado en {expected_value}."
+    detail_schema: viability_pattern
+    suggestion_template: "Severidad 1-3 registro; 4-6 sustitucion/reduccion; 7+ terminar bloque y considerar consulta profesional."
+    related_methods: []
+
+
+  # ---------------------------------------------------------------------------
+  # SECTION U — Layer D additions (periodization)
+  # ---------------------------------------------------------------------------
+
+  template_exercise_ref_missing:
+    id: template_exercise_ref_missing
+    applies_at: session
+    severity: structural_hard
+    level: null
+    message_template: "Template references exercise {component_name} not in catalog."
+    detail_schema: consistency_pattern
+    suggestion_template: "Fix the ref or add the exercise to the catalog."
+    related_methods: []
+
+  template_placeholder_unresolvable:
+    id: template_placeholder_unresolvable
+    applies_at: session
+    severity: structural_hard
+    level: null
+    message_template: "Placeholder query {component_name} matches no catalog exercise (after equivalence fallback)."
+    detail_schema: consistency_pattern
+    suggestion_template: "Relax the query constraints or extend the catalog."
+    related_methods: []
+
+  template_resolution_via_medium_equivalence:
+    id: template_resolution_via_medium_equivalence
+    applies_at: session
+    severity: informational
+    level: null
+    message_template: "Placeholder resolved via medium-similarity equivalence: {component_name}."
+    detail_schema: consistency_pattern
+    suggestion_template: "Acceptable substitute; review if the stimulus shift matters."
+    related_methods: []
+
+  microcycle_frequency_below_target:
+    id: microcycle_frequency_below_target
+    applies_at: microcycle_plus
+    severity: informational
+    level: null
+    message_template: "Pattern {pattern_declared} appears {actual_value}x, below target min {expected_value}."
+    detail_schema: viability_pattern
+    suggestion_template: "Add a slot covering the pattern or lower the target."
+    related_methods: []
+
+  microcycle_frequency_above_target:
+    id: microcycle_frequency_above_target
+    applies_at: microcycle_plus
+    severity: informational
+    level: null
+    message_template: "Pattern {pattern_declared} appears {actual_value}x, above target max {expected_value}."
+    detail_schema: viability_pattern
+    suggestion_template: "Reduce slots or raise the target."
+    related_methods: []
+
+  interference_warning:
+    id: interference_warning
+    applies_at: microcycle_plus
+    severity: informational
+    level: null
+    message_template: "Interference rule {component_name} fired: see rationale in detail."
+    detail_schema: viability_pattern
+    suggestion_template: "Coaches may override deliberately; v3 generator must satisfy (v3_constraint)."
+    related_methods: []
+
+  microcycle_slot_unfilled:
+    id: microcycle_slot_unfilled
+    applies_at: microcycle_plus
+    severity: informational
+    level: null
+    message_template: "Slot {component_name} has no session_template (draft ok, published warning)."
+    detail_schema: consistency_pattern
+    suggestion_template: "Fill the slot before publishing."
+    related_methods: []
+
+  microcycle_day_conflict:
+    id: microcycle_day_conflict
+    applies_at: microcycle_plus
+    severity: structural_hard
+    level: null
+    message_template: "Two fixed slots on day {actual_value} with no-coexistence constraint."
+    detail_schema: consistency_pattern
+    suggestion_template: "Move one slot; logical impossibility."
+    related_methods: []
+
+  mesocycle_deload_overdue:
+    id: mesocycle_deload_overdue
+    applies_at: microcycle_plus
+    severity: informational
+    level: null
+    message_template: "{actual_value} standard weeks without planned_deload (threshold {expected_value} = min(level, model))."
+    detail_schema: viability_pattern
+    suggestion_template: "Insert a planned_deload week."
+    related_methods: []
+
+  mesocycle_progression_incoherent_with_model:
+    id: mesocycle_progression_incoherent_with_model
+    applies_at: microcycle_plus
+    severity: informational
+    level: null
+    message_template: "Progression ramp violates declared model {pattern_declared} expectations."
+    detail_schema: drift_pattern
+    suggestion_template: "Adjust the ramp or re-declare the model."
+    related_methods: []
+
+  mesocycle_duration_out_of_range:
+    id: mesocycle_duration_out_of_range
+    applies_at: microcycle_plus
+    severity: informational
+    level: null
+    message_template: "Duration {actual_value} weeks outside extended range [2,8]."
+    detail_schema: viability_pattern
+    suggestion_template: "Split into two mesocycles or shorten."
+    related_methods: []
+
+  week_modifier_conflict:
+    id: week_modifier_conflict
+    applies_at: microcycle_plus
+    severity: informational
+    level: null
+    message_template: "Week {component_index}: two modifiers touch {pattern_declared} with overlapping scopes."
+    detail_schema: consistency_pattern
+    suggestion_template: "Applied in declared order; consolidate if unintended."
+    related_methods: []
+
+  test_week_without_amrap:
+    id: test_week_without_amrap
+    applies_at: microcycle_plus
+    severity: informational
+    level: null
+    message_template: "Test week {component_index} materializes no AMRAP measurement blocks."
+    detail_schema: consistency_pattern
+    suggestion_template: "Add AMRAP blocks on hub lifts for e1RM calibration."
+    related_methods: ['amrap']
+
+  periodization_model_drift:
+    id: periodization_model_drift
+    applies_at: microcycle_plus
+    severity: informational
+    level: null
+    message_template: "Mesocycle declared {pattern_declared} behaves like {expected_value} (rule {component_name})."
+    detail_schema: drift_pattern
+    suggestion_template: "Re-declare the model or adjust structure. v3_constraint for generator."
+    related_methods: []
+
+  macrocycle_timeline_gap:
+    id: macrocycle_timeline_gap
+    applies_at: microcycle_plus
+    severity: informational
+    level: null
+    message_template: "Weeks {component_index} have no phase assigned."
+    detail_schema: consistency_pattern
+    suggestion_template: "Assign a phase or declare transition."
+    related_methods: []
+
+  macrocycle_phase_overlap:
+    id: macrocycle_phase_overlap
+    applies_at: microcycle_plus
+    severity: structural_hard
+    level: null
+    message_template: "Phases {component_name} overlap in dates."
+    detail_schema: consistency_pattern
+    suggestion_template: "Fix the sequence; logical impossibility."
+    related_methods: []
+
+  event_a_without_taper:
+    id: event_a_without_taper
+    applies_at: microcycle_plus
+    severity: informational
+    level: null
+    message_template: "Priority-A event {component_name} has no taper defined."
+    detail_schema: viability_pattern
+    suggestion_template: "Add a taper (default: exponential, -50% volume, 8-14 days)."
+    related_methods: []
+
+  taper_duration_atypical:
+    id: taper_duration_atypical
+    applies_at: microcycle_plus
+    severity: informational
+    level: null
+    message_template: "Taper duration {actual_value}d outside default range {expected_value} for priority."
+    detail_schema: viability_pattern
+    suggestion_template: "Verify intent; HYROX-style events tolerate longer tapers."
+    related_methods: []
+
+  realization_not_adjacent_to_event:
+    id: realization_not_adjacent_to_event
+    applies_at: microcycle_plus
+    severity: informational
+    level: null
+    message_template: "Block realization mesocycle does not end adjacent to event A."
+    detail_schema: consistency_pattern
+    suggestion_template: "A peak that aims at nothing; resequence."
+    related_methods: []
+
+  taper_not_producing_freshness:
+    id: taper_not_producing_freshness
+    applies_at: microcycle_plus
+    severity: informational
+    level: null
+    message_template: "During taper: e1rm falling or readiness flat vs pre-taper."
+    detail_schema: viability_pattern
+    suggestion_template: "Early warning; review taper volume or external stressors."
+    related_methods: []
+
+  multiple_a_events_too_close:
+    id: multiple_a_events_too_close
+    applies_at: microcycle_plus
+    severity: informational
+    level: null
+    message_template: "Two A events {actual_value} weeks apart (< 6)."
+    detail_schema: viability_pattern
+    suggestion_template: "No macro can taper and rebuild in that span; demote one to B."
+    related_methods: []
+
+  planned_deload_advanced:
+    id: planned_deload_advanced
+    applies_at: microcycle_plus
+    severity: informational
+    level: null
+    message_template: "Reactive deload signals advanced the planned deload by {actual_value} days."
+    detail_schema: consistency_pattern
+    suggestion_template: "Plan was right about WHAT; data corrected WHEN."
+    related_methods: []
+
+  planned_deload_insufficient:
+    id: planned_deload_insufficient
+    applies_at: microcycle_plus
+    severity: informational
+    level: null
+    message_template: "Overreached within 21d after completed planned deload."
+    detail_schema: viability_pattern
+    suggestion_template: "Recipe too light or mesocycle too aggressive; structural review."
+    related_methods: []
+
+  progression_held_by_fatigue_state:
+    id: progression_held_by_fatigue_state
+    applies_at: microcycle_plus
+    severity: informational
+    level: null
+    message_template: "Week materialized as HOLD (repeat previous modifiers) due to accumulating state."
+    detail_schema: viability_pattern
+    suggestion_template: "Progression paused, not lost; resumes when state normalizes."
+    related_methods: []
+
+  mesocycle_weeks_shifted:
+    id: mesocycle_weeks_shifted
+    applies_at: microcycle_plus
+    severity: informational
+    level: null
+    message_template: "Remaining weeks shifted +{actual_value} after deload insertion."
+    detail_schema: consistency_pattern
+    suggestion_template: "Mesocycle extended; end date moved."
+    related_methods: []
+
+  mesocycle_week_absorbed_for_event:
+    id: mesocycle_week_absorbed_for_event
+    applies_at: microcycle_plus
+    severity: informational
+    level: null
+    message_template: "Standard week {component_index} absorbed: shift collided with event."
+    detail_schema: consistency_pattern
+    suggestion_template: "The event is the only immovable date."
+    related_methods: []
+
+# =============================================================================
+# SUMMARY
+# =============================================================================
+
+  # ---------------------------------------------------------------------------
+  # SECTION V — Prescriptor engine flags (origin: Prescriptor v0.1, registered P2)
+  # ---------------------------------------------------------------------------
+  intent_not_declared:
+    id: intent_not_declared
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "Block has no intent_declared. Declared immutability requires explicit intent."
+    detail_schema: consistency_pattern
+    suggestion_template: "Declare the block's intent; it is written, never inferred (architectural principle #1)."
+    related_methods: [straight, cluster, drop, rest_pause, amrap, pyramid, emom, contrast, complex]
+  cluster_rest_inversion:
+    id: cluster_rest_inversion
+    applies_at: block
+    severity: structural_hard
+    level: null
+    message_template: "rest_intra_set_sec ({rest_intra_set_sec}s) >= rest_inter_set_sec ({rest_inter_set_sec}s)."
+    detail_schema: consistency_pattern
+    suggestion_template: "Intra-set rest must be shorter than inter-set rest; otherwise the block behaves as straight."
+    related_methods: [cluster]
+  emom_work_undefined:
+    id: emom_work_undefined
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "EMOM has no work per interval defined (work_per_interval)."
+    detail_schema: consistency_pattern
+    suggestion_template: "Define the interval dose; without it density is not verifiable."
+    related_methods: [emom]
+  component_exercise_duplicated:
+    id: component_exercise_duplicated
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "Same exercise appears more than once in the chain."
+    detail_schema: consistency_pattern
+    suggestion_template: "A repeated exercise behaves as rest-pause/straight sets, not as a chain. Circuit variants are exempt."
+    related_methods: [contrast, complex]
+  contrast_pairs_unbalanced:
+    id: contrast_pairs_unbalanced
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "Unbalanced pairing: {heavy_count} heavy vs {explosive_count} explosive."
+    detail_schema: component_pattern
+    suggestion_template: "PAP contrast works in pairs: each heavy pairs with one explosive."
+    related_methods: [contrast]
+  contrast_explosive_reps_high:
+    id: contrast_explosive_reps_high
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "Explosive component work above power range (>6 reps / >9s / >30m)."
+    detail_schema: component_pattern
+    suggestion_template: "Power expression dies after 5-6 reps; beyond that it is conditioning, not PAP."
+    related_methods: [contrast]
+  slc_component_reps_atypical:
+    id: slc_component_reps_atypical
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "Component work atypical for olympic complex (>6 reps / >9s / >30m)."
+    detail_schema: component_pattern
+    suggestion_template: "Olympic derivatives live in 1-6 reps: technique collapses before muscle."
+    related_methods: [complex]
+  contrast_heavy_low_demand:
+    id: contrast_heavy_low_demand
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "Heavy component {component_name} with MDI {mdi_value} (< 3)."
+    detail_schema: component_pattern
+    suggestion_template: "PAP potentiation requires high mechanical demand compounds (MDI >= 3); isolation does not potentiate. MDI is the v0.1 proxy; FV profiles pending (backlog)."
+    related_methods: [contrast]
+  contrast_explosive_low_demand:
+    id: contrast_explosive_low_demand
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "Explosive component {component_name} with MDI {mdi_value} (< 2.5)."
+    detail_schema: component_pattern
+    suggestion_template: "The explosive component must be ballistic (jumps, throws, derivatives); isolation does not express power. MDI is the v0.1 proxy."
+    related_methods: [contrast]
+  rest_insufficient_heavy:
+    id: rest_insufficient_heavy
+    applies_at: block
+    severity: informational
+    level: null
+    message_template: "Load {load_pct}% with rest {rest_inter_set_sec}s."
+    detail_schema: viability_pattern
+    suggestion_template: "Loads >= 85% require >= 2-3 min to sustain neural quality."
+    related_methods: [straight, cluster, pyramid]
+  session_empty:
+    id: session_empty
+    applies_at: session
+    severity: informational
+    level: null
+    message_template: "Session has no blocks."
+    detail_schema: consistency_pattern
+    suggestion_template: null
+    related_methods: []
+
+  session_block_order_suboptimal:
+    id: session_block_order_suboptimal
+    applies_at: session
+    severity: informational
+    level: null
+    message_template: "Block {component_name} placed after lower neural-demand work; intra-session order is not descending by neural demand."
+    detail_schema: consistency_pattern
+    suggestion_template: "Order blocks by descending neural demand (max-effort/power first, metabolic/conditioning last)."
+    related_methods: []
+
+  session_interference_adjacent:
+    id: session_interference_adjacent
+    applies_at: session
+    severity: informational
+    level: null
+    message_template: "Adjacent blocks {component_name} share a fatiguing pattern/segment; intra-session interference may degrade quality of the second."
+    detail_schema: consistency_pattern
+    suggestion_template: "Separate same-pattern or same-segment fatiguing blocks within the session, or accept the overlap deliberately."
+    related_methods: []
+
+
+summary:
+  total_flags: 177
+  by_severity:
+    informational: 76
+    structural_hard: 61
+    viability: 40
+  by_section:
+    A_zone_classification: 2
+    B_viability_general: 3
+    C_cluster: 6
+    D_drop: 10
+    E_rest_pause: 7
+    F_amrap: 7
+    G_pyramid: 7
+    H_emom: 10
+    I_contrast: 11
+    J_complex_common: 10
+    K_single_load_chain: 6
+    L_independent_load_chain: 5
+    M_circuit: 9
+    N_exercise_count: 9
+    O_intent: 1
+    P_prescription_vs_execution: 4
+    Q_a10_additions: 10
+    S_layer_b_additions: 8
+    T_layer_c_additions: 13
+    U_layer_d_additions: 26
+    V_prescriptor_engine: 13
+  by_applies_at:
+    block: 127
+    session: 9
+    microcycle_plus: 32
+    execution: 7
+    catalog_load: 2
+  by_detail_schema:
+    consistency_pattern: 68
+    viability_pattern: 69
+    component_pattern: 28
+    drift_pattern: 10
+    custom: 2
+  graduated_levels:
+    flags_with_graduated_levels:
+      - overprescribed_or_load_too_high
+      - emom_work_exceeds_interval
+      - chipper_estimated_duration_exhaustive
+      - prescribed_vs_executed_undershoot

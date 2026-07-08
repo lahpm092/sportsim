@@ -1,0 +1,421 @@
+# =============================================================================
+# Autoregulation Schema — Training Taxonomy v2, Layer C
+# =============================================================================
+# Formal schema consolidating C.0-C.6. Rules live in adjustment_rules.yaml.
+# =============================================================================
+
+version: "1.0"
+layer: "C"
+parent: "taxonomy_v2"
+depends_on: ["Layer A (methods, executed state)", "Layer B (catalog, equivalences)"]
+
+# =============================================================================
+# SECTION 1 — ARCHITECTURE (C.0)
+# =============================================================================
+
+architecture:
+  horizons:
+    pre_session:
+      signals: [readiness_input]
+      acts_on: "today's session before it starts"
+    intra_session:
+      signals: [rir_reported, rpe_reported, set_failed, bar_velocity, pain_flag]
+      acts_on: "pending work_units of current session only"
+    inter_session:
+      signals: [trend signals, volume counters, fatigue_state]
+      acts_on: "next session only (week-level modulation = Layer D)"
+  authority_model:
+    description: >
+      Hybrid per-rule (Model C). Every rule declares authority; v2 ships ALL
+      rules as 'suggest'. The field exists so v3 can promote individual rules
+      to 'auto' once historical data proves them. Deload is ALWAYS suggest.
+    values: [suggest, auto]
+  immutability_with_provenance: >
+    Adjustments never rewrite prescriptions. work_unit carries
+    prescribed_original -> adjustments_applied[] -> prescribed_effective ->
+    executed. The plan-vs-needed distance is preserved as training data for v3.
+  negative_scope:
+    - "Does not generate plans (v3)"
+    - "Does not structure weeks/mesocycles (D). C answers 'how much today';
+       D answers 'what this week'"
+    - "Does not diagnose. pain_flag grades prudence of response only;
+       severity >= 7 suggests professional consultation"
+    - "Does not require hardware. bar_velocity optional, never a dependency"
+
+# =============================================================================
+# SECTION 2 — ENTITIES (C.0.2)
+# =============================================================================
+
+feedback_signal:
+  fields:
+    id: { type: string }
+    timestamp: { type: datetime }
+    scope: { type: enum, values: [work_unit, block, session, athlete_day] }
+    scope_ref: { type: id }
+    signal_type:
+      type: enum
+      subjective: [rir_reported, rpe_reported, readiness_input, pain_flag]
+      objective: [bar_velocity, reps_completed, load_used, set_failed, time_to_complete]
+    value: { type: "number | boolean | object" }
+    signal_confidence:
+      type: "number | null"
+      notes: "Unused in v2. MARKED v3: reporter reliability calibration
+              (rir_reported vs observable outcomes)."
+
+adjustment:
+  fields:
+    id: { type: string }
+    timestamp: { type: datetime }
+    horizon: { type: enum, values: [pre_session, intra_session, inter_session] }
+    rule_id: { type: string, notes: "full traceability" }
+    target_scope: { type: enum, values: [work_unit, block, session, plan] }
+    target_ref: { type: id }
+    action:
+      type:
+        enum: [load_delta, volume_delta, rest_delta, substitute_exercise,
+               cap_intensity, suggest_deload, abort_block, flag_only]
+      params: { type: object }
+    reason: { type: string, notes: "human-readable, templated" }
+    evidence: { type: "[feedback_signal_id]" }
+    authority: { type: enum, values: [suggest, auto] }
+    status: { type: enum, values: [proposed, accepted, rejected, applied, expired] }
+
+adjustment_rule:
+  fields:
+    id: { type: string }
+    horizon: { type: enum }
+    applies_to: { type: "object | null", notes: "methods, category filters" }
+    conditions: { type: "[string]", notes: "boolean expressions; generic drift
+                                            engine (Group 5) extended with
+                                            C signal vocabulary" }
+    action_template: { type: object }
+    authority_default: { type: enum, default: suggest }
+    cooldown: { type: "duration | null", notes: "anti-cascade" }
+    escalation: { type: "object | null" }
+
+deload_proposal:
+  fields:
+    id: { type: string }
+    triggered_by: { type: "[rule_id]" }
+    evidence: { type: "[signal_id]" }
+    scope: { type: enum, values: [global, pattern_local, muscle_local] }
+    type: { type: enum, values: [volume_deload, intensity_deload,
+                                 combined_deload, active_rest] }
+    duration_days: { type: integer, default: 7 }
+    prescription_deltas:
+      sets_pct: { type: "number | null" }
+      load_pct: { type: "number | null" }
+      conditioning_load_cap: { type: "number | null" }
+    authority: { type: const, value: suggest }
+    status: { type: enum, values: [proposed, accepted, modified, rejected, completed] }
+  default_recipe:
+    type: volume_deload
+    sets_pct: -40
+    load_pct: 0              # intensity maintained
+    duration_days: 7
+    conditioning_load_cap: "0.5 × chronic"
+  reactive_only: >
+    C.5 handles REACTIVE deloads (evidence-driven). Scheduled/proactive
+    deloads belong to Layer D. MARKED for D: a reactive deload arriving
+    near a planned one should advance the planned one, not duplicate.
+
+# =============================================================================
+# SECTION 3 — SIGNAL CAPTURE SPEC (C.1)
+# =============================================================================
+
+capture:
+  levels:
+    level_0_automatic: [reps_completed, load_used, set_failed,
+                        time_to_complete, execution_status]
+    level_1_reported: [rir_reported, rpe_reported, readiness_input,
+                       pain_flag, bar_velocity]
+  golden_rule: >
+    No rule may assume level-1 signals exist. Missing signal = rule does
+    not fire. No nagging, no degradation.
+
+  rir_reported:
+    scope: work_unit
+    scale: [0, 1, 2, 3, 4, "5+"]
+    truncation_rationale: "self-reported RIR accuracy degrades beyond ~4-5
+                           reps from failure; the schema does not capture
+                           precision that does not exist"
+    granularity: every set, main category
+    ui_pattern: "pre-populated with rir_target; confirm = 1 tap"
+
+  rpe_reported:
+    scope: block            # once per block
+    scale: "Borg CR-10, halves allowed"
+    applies: conditioning category
+
+  readiness_input:
+    scope: athlete_day
+    optional: true
+    items:
+      sleep_quality: { scale: [1, 5] }
+      soreness: { scale: [1, 5], inverted: true }
+      energy: { scale: [1, 5] }
+      stress: { scale: [1, 5], inverted: true }
+    derived: "readiness_score = mean(items)"
+    friction_budget: "<= 15 seconds"
+
+  pain_flag:
+    scope: "work_unit | session"
+    capture: "ad-hoc, always available, never solicited"
+    fields:
+      body_region: { type: enum, ref: body_region_enum }
+      severity: { scale: [1, 10] }
+      onset: { type: enum, values: [during_set, between_sets, pre_existing] }
+
+  bar_velocity:
+    scope: work_unit
+    unit: "m/s mean concentric"
+    optional: true
+
+body_region_enum:
+  values: [neck, shoulder_l, shoulder_r, elbow_l, elbow_r, wrist_l, wrist_r,
+           upper_back, lower_back, hip_l, hip_r, knee_l, knee_r,
+           ankle_l, ankle_r]
+  notes: >
+    Distinct from muscle_group: pain is articular/regional. CATALOG ADDENDUM
+    MARKED: exercises gain optional loaded_regions: [body_region] (mostly
+    derivable from pattern + muscles) to power substitute_exercise with
+    avoid_region. Hook: fn:exercise_loads_region.
+
+derived_signals:
+  per_work_unit:
+    rir_delta: "rir_reported - rir_target"
+    completion_ratio: "reps_completed / reps_target"
+    load_compliance: "load_used / load_prescribed_effective"
+    velocity_loss_pct: "(v_first - v_last) / v_first   # if velocity present"
+  per_day:
+    readiness_score: "mean(4 items)"
+    readiness_delta: "readiness_score - readiness_baseline_14d"
+  per_block:
+    session_rpe_load: "rpe_reported × duration_min   # Foster, conditioning"
+  multi_session:
+    undershoot_streak: "consecutive sessions with any rir_delta <= -1, per pattern"
+    e1rm_estimate: "load × (1 + (reps + rir_reported) / 30)   # Epley + RIR;
+                    confidence degrades reps>10 or rir>4"
+    e1rm_trend: "slope over last 3-5 sessions of same exercise, %/session"
+    completion_trend: "3-session window"
+    intra_adjustment_rate: "% of recent sessions where C.2 intervened"
+    readiness_baseline: "14d rolling mean"
+    readiness_acute: "3d rolling mean"
+    acwr_conditioning: "acute 7d / chronic 28d of session_rpe_load"
+
+# =============================================================================
+# SECTION 4 — INTRA-SESSION ENGINE CONFIG (C.2)
+# =============================================================================
+
+intra_session:
+  evaluation_points: [post_work_unit, post_block, pain_flag_immediate]
+  scope_restriction: "pending work_units of current session only"
+
+  rir_to_load_conversion:
+    default_pct_per_rir: 2.5
+    context_modifiers: { zone_z1_z2: 3.0, zone_z3_z4: 2.5, zone_z5_z6: 2.0 }
+
+  asymmetry_policy:
+    reduce: "fires on ONE signal (rir_delta <= -2 in a single set)"
+    increase: "requires TWO consecutive sets with rir_delta >= +2"
+    increase_cap_per_session_pct: 5
+    reduce_cap_per_block_pct: 10
+    rationale: "an unusually good day is usually noise; an unusually bad
+                day is usually signal"
+
+  cascade_prevention:
+    rule_cooldown: 1_per_block
+    conflict_resolution: "higher severity wins; loser logged as suppressed"
+    session_budget: 3
+    budget_exceeded_flag: session_adjustment_budget_exceeded
+
+  method_adjustment_profiles:
+    straight:      { signal: rir_delta, adjustable: [load, remaining_sets], protected: [reps_target] }
+    cluster:       { signal: "rir_delta + intra-cluster failure",
+                     adjustable: [rest_intra_set, cluster_count], protected: [load],
+                     notes: "load is the method's identity; extend rest first, then cut clusters" }
+    drop:          { signal: "first-segment rir_delta", adjustable: [first_segment_load],
+                     protected: [drop_structure] }
+    rest_pause:    { signal: mini_set_reps, adjustable: [mini_set_count],
+                     protected: [load, activation_rir],
+                     special: "activation RIR >= 3 -> flag rest_pause_load_too_light" }
+    amrap:         { adjustable: [], protected: [all],
+                     notes: "it IS the measurement; feeds C.4" }
+    pyramid:       { signal: "early-set rir_delta", adjustable: [planned_peak],
+                     protected: [structure], notes: "top-set protection" }
+    emom:          { signal: "work_time vs interval", adjustable: [reps_per_interval, interval_count],
+                     protected: [interval_duration] }
+    contrast:      { signal: "heavy-component rir_delta", adjustable: [heavy_load],
+                     protected: [explosive_component],
+                     notes: "PAP requires heavy quality; never load the explosive to compensate" }
+    complex_slc:   { signal: weakest_link_failure, adjustable: [shared_load, rounds],
+                     protected: [chain_order] }
+    complex_ilc:   { signal: per_component_rir_delta, adjustable: [per_component_load],
+                     protected: [structure] }
+    complex_circuit: { signal: "rpe_reported, time_to_complete",
+                       adjustable: [rounds, time_cap], protected: [] }
+
+  pain_severity_semantics:
+    mild_1_3: flag_only
+    moderate_4_6: "substitute via catalog equivalences avoiding region;
+                   fallback load_delta -20%"
+    severe_7_plus: "suggest abort_block + professional consultation;
+                    authority remains suggest"
+
+# =============================================================================
+# SECTION 5 — VOLUME ENGINE CONFIG (C.3)
+# =============================================================================
+
+volume_engine:
+  fractional_counting:
+    primary: 1.0
+    secondary: 0.5
+    override: muscle_contribution_override   # from catalog (B.1.7)
+
+  effective_set_threshold:
+    rir_max: 4
+    source: "rir_reported ?? rir_target"
+    effect: "auto-excludes warmups, pyramid approach sets, light technique work"
+
+  method_set_counting:
+    straight: "1 per set"
+    cluster: "1 per complete cluster set"
+    drop: "1 + 0.5 per drop segment"
+    rest_pause: "1.5 fixed"
+    amrap: "1"
+    pyramid: "1 per set above threshold"
+    contrast: "1 per pair (explosive adds no hypertrophic volume)"
+    complex_slc: "1 per round, distributed per component contribution"
+    complex_ilc: "1 per component per round"
+    conditioning: "0 here -> separate bucket"
+
+  window: { type: rolling, days: 7 }
+
+  conditioning_bucket:
+    unit: "session_rpe_load (Foster)"
+    window: rolling_7d_and_28d
+    consumers: [fatigue_state, deload_rules, acwr]
+
+  volume_landmarks:
+    _meta: { source: population_defaults_rp_style, athlete_override: "hook (future profile)",
+             flags_severity: informational_always }
+    quadriceps:      { mev: 8, mav_low: 12, mav_high: 18, mrv: 22 }
+    hamstrings:      { mev: 6, mav_low: 10, mav_high: 16, mrv: 20 }
+    glutes:          { mev: 6, mav_low: 10, mav_high: 16, mrv: 22 }
+    adductors:       { mev: 4, mav_low: 6,  mav_high: 12, mrv: 16 }
+    abductors:       { mev: 4, mav_low: 6,  mav_high: 12, mrv: 16 }
+    calves:          { mev: 6, mav_low: 10, mav_high: 16, mrv: 20 }
+    hip_flexors:     { mev: 2, mav_low: 4,  mav_high: 8,  mrv: 12 }
+    pectorals:       { mev: 8, mav_low: 12, mav_high: 20, mrv: 24 }
+    anterior_deltoid: { mev: 4, mav_low: 6, mav_high: 10, mrv: 14 }
+    lateral_deltoid: { mev: 8, mav_low: 12, mav_high: 20, mrv: 26 }
+    posterior_deltoid: { mev: 6, mav_low: 10, mav_high: 18, mrv: 22 }
+    triceps:         { mev: 6, mav_low: 10, mav_high: 16, mrv: 20 }
+    lats:            { mev: 8, mav_low: 12, mav_high: 20, mrv: 25 }
+    upper_back:      { mev: 8, mav_low: 12, mav_high: 20, mrv: 25 }
+    biceps:          { mev: 6, mav_low: 10, mav_high: 16, mrv: 22 }
+    forearms:        { mev: 2, mav_low: 4,  mav_high: 10, mrv: 14 }
+    abdominals:      { mev: 4, mav_low: 8,  mav_high: 14, mrv: 18 }
+    obliques:        { mev: 2, mav_low: 4,  mav_high: 10, mrv: 14 }
+    spinal_erectors: { mev: 4, mav_low: 6,  mav_high: 12, mrv: 16 }
+    lower_back:      { mev: 2, mav_low: 4,  mav_high: 8,  mrv: 12 }
+    neck:            { mev: 0, mav_low: 2,  mav_high: 6,  mrv: 10 }
+    rotator_cuff:    { mev: 2, mav_low: 4,  mav_high: 8,  mrv: 12 }
+
+  volume_status:
+    enum: [below_mev, productive, high, exceeded]
+    consumers: [inter_session_rules, deload_rules, "Layer D (future)"]
+
+  marked_v3: "landmark calibration per athlete from executed + performance trends"
+
+# =============================================================================
+# SECTION 6 — FATIGUE STATE (C.4)
+# =============================================================================
+
+fatigue_state:
+  enum: [fresh, normal, accumulating, overreached]
+  design: "interpretable discrete state from declarative conditions;
+           explicit rejection of opaque numeric scores"
+  derivation:
+    overreached:
+      any_2_of:
+        - "e1rm_trend(hub_lifts) <= -5% over 3 sessions"
+        - "undershoot_streak >= 3 in 2+ patterns"
+        - "readiness_acute < readiness_baseline - 1.2"
+        - "count(muscle_volume_exceeded_mrv) >= 2 groups"
+    accumulating:
+      any_2_of:
+        - "undershoot_streak >= 2 in any pattern"
+        - "acwr_conditioning > 1.5"
+        - "readiness_acute < readiness_baseline - 0.8"
+        - "intra_adjustment_rate > 50% last 4 sessions"
+    fresh:
+      all_of:
+        - "consistent overshoot (2+ sessions)"
+        - "readiness_acute >= readiness_baseline"
+    normal: default
+  transparency: "every transition carries the conditions that fired (evidence)"
+  acwr_thresholds: { spike: 1.5, detraining_floor: 0.8,
+                     detraining_note: "informational; suppressed during declared taper" }
+
+# =============================================================================
+# SECTION 7 — READINESS ZONES (C.6)
+# =============================================================================
+
+readiness_engine:
+  principle: "deviation from own baseline, not absolute value"
+  acute_vs_chronic: "C.6 acts on TODAY only; chronic handled by C.4
+                     (readiness_chronic_low) — no double counting"
+  zones:
+    green: { condition: "delta >= -0.5", action: none }
+    yellow:
+      condition: "-1.2 < delta < -0.5"
+      action: "volume_delta sets -20% accessory_blocks + hold_planned_progression"
+      philosophy: "protect main work, trim the optional"
+    red:
+      condition: "delta <= -1.2"
+      action: "load_delta -10% global + volume_delta -30% accessories"
+      alternative: "light technique session (50-60%, quality focus)"
+  special_rules:
+    severe_single_item_override:
+      condition: "any_item <= 1"
+      effect: "minimum zone = yellow regardless of mean"
+      treatment: generic (no per-item special casing)
+    green_light_day:
+      condition: "delta >= +0.8 AND fatigue_state == fresh"
+      action: flag_only
+      rationale: "system slows on its own but never accelerates on its own;
+                  flag exists looking ahead to v3 automation"
+  zero_friction: "questionnaire suggested, never blocking; no data = engine
+                  sleeps; first 7 days accumulate baseline without modulating"
+
+# =============================================================================
+# SECTION 8 — ESCALATION CHAIN (C.5)
+# =============================================================================
+
+escalation_chain:
+  description: "each level fires only when the previous proved insufficient"
+  levels:
+    1: "C.2 adjusts a set (intra)"
+    2: "C.4 adjusts next session (inter)"
+    3: "C.4 trims accessories (volume_redistribution)"
+    4: "C.5 proposes local deload"
+    5: "C.5 proposes global deload"
+  deload_suppression_window_days: 21
+  deload_effectiveness:
+    measured_at: "deload_end + 7 days"
+    compares: [readiness_acute, e1rm_estimates, fatigue_state_transition]
+    output: [effective, partial, ineffective]
+    marked_v3: "learn which deload type works for this athlete; personalize
+                default recipe"
+
+# =============================================================================
+# SECTION 9 — STATUS
+# =============================================================================
+
+status:
+  rules_catalog: adjustment_rules.yaml
+  rule_counts: { intra_session: 12, inter_session: 9, deload: 4, readiness: 4, meta: 2 }
+  new_flags: 13
+  new_functions: 11
+  catalog_addendum_pending: "loaded_regions per exercise + fn:exercise_loads_region"

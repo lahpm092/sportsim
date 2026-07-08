@@ -1,0 +1,4182 @@
+{
+  "version": 1,
+  "note": "Suite de oro: cada hallazgo de uso se vuelve test permanente. Los params de los casos sintéticos se completan con defaults en el harness cuando aplica.",
+  "cases": [
+    {
+      "id": "martin_b1",
+      "origin": "sesión de uso real 2026-06-11",
+      "block": {
+        "id": "b1",
+        "method": "complex",
+        "variant": "olympic_complex",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "back_squat",
+            "role": "",
+            "reps": 6
+          },
+          {
+            "exercise": "pec_deck",
+            "role": "",
+            "reps": 20
+          },
+          {
+            "exercise": "bench_press_barbell",
+            "role": "",
+            "reps": 50
+          }
+        ],
+        "intent_declared": "strength_endurance",
+        "params": {
+          "total_rounds": 4,
+          "shared_load_pct_1rm_of_weakest": 65,
+          "rest_inter_round_sec": 180,
+          "rest_between_components_sec": 2
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "slc_implement_heterogeneous",
+        "slc_component_reps_atypical",
+        "drift_intent_method_mismatch"
+      ]
+    },
+    {
+      "id": "martin_b2",
+      "origin": "sesión de uso real 2026-06-11",
+      "block": {
+        "id": "b2",
+        "method": "cluster",
+        "variant": "doubles_triples",
+        "exercise": "snatch_pull",
+        "components": [],
+        "intent_declared": "conditioning",
+        "params": {
+          "reps_per_cluster": 2,
+          "clusters_per_set": 2,
+          "rest_intra_set_sec": 22,
+          "load_pct_1rm": 85,
+          "rest_inter_set_sec": 240,
+          "sets": 4
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "drift_intent_method_mismatch"
+      ]
+    },
+    {
+      "id": "martin_b3",
+      "origin": "sesión de uso real 2026-06-11",
+      "block": {
+        "id": "b3",
+        "method": "contrast",
+        "variant": "french_contrast",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "back_squat",
+            "role": "heavy",
+            "reps": 3
+          },
+          {
+            "exercise": "push_press",
+            "role": "explosive",
+            "reps": 6
+          }
+        ],
+        "intent_declared": "conditioning",
+        "params": {
+          "total_pairs": 3,
+          "transition_rest_sec": 30,
+          "rest_inter_chain_sec": 60,
+          "rest_inter_pair_sec": 300
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "variant_structure_incomplete",
+        "drift_intent_method_mismatch"
+      ],
+      "expect_absent": [
+        "contrast_pairs_unbalanced"
+      ]
+    },
+    {
+      "id": "martin_b4",
+      "origin": "sesión de uso real 2026-06-11",
+      "block": {
+        "id": "b4",
+        "method": "contrast",
+        "variant": "wave_contrast",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "barbell_curl",
+            "role": "heavy",
+            "reps": 8
+          },
+          {
+            "exercise": "skullcrusher",
+            "role": "explosive",
+            "reps": 6
+          }
+        ],
+        "intent_declared": "max_strength",
+        "params": {
+          "waves_count": 3,
+          "pairs_per_wave": 2,
+          "starting_heavy_load_pct": 80,
+          "wave_heavy_increment_pct": 3,
+          "rest_inter_wave_sec": 300,
+          "rest_inter_pair_sec": 240,
+          "transition_rest_sec": 45
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "contrast_heavy_low_demand",
+        "contrast_explosive_low_demand"
+      ]
+    },
+    {
+      "id": "martin_b5",
+      "origin": "sesión de uso real 2026-06-11",
+      "block": {
+        "id": "b5",
+        "method": "drop",
+        "variant": "mechanical_drop",
+        "exercise": "pec_deck",
+        "components": [],
+        "intent_declared": "power",
+        "params": {
+          "drops_count": 3,
+          "drop_pct_per_drop": 0,
+          "mechanism": "angle",
+          "mechanical_progression": "1",
+          "reps_first_segment": 8,
+          "rest_between_drops_sec": 3,
+          "load_metric_primary": "percent_1rm",
+          "rest_inter_set_sec": 150,
+          "sets": 2
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "drift_intent_method_mismatch"
+      ]
+    },
+    {
+      "id": "battery_G2_reps_vacias",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "fixed_round_circuit",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "ski_erg",
+            "reps": ""
+          },
+          {
+            "exercise": "wall_ball",
+            "reps": 20
+          }
+        ],
+        "intent_declared": "conditioning",
+        "params": {},
+        "_touched": {}
+      },
+      "expect_contains": [
+        "component_work_undefined"
+      ]
+    },
+    {
+      "id": "battery_G3_duplicado",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "superset",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "curl_dumbbell",
+            "reps": 10
+          },
+          {
+            "exercise": "curl_dumbbell",
+            "reps": 10
+          }
+        ],
+        "intent_declared": "hypertrophy",
+        "params": {},
+        "_touched": {}
+      },
+      "expect_contains": [
+        "component_exercise_duplicated"
+      ]
+    },
+    {
+      "id": "battery_G4_pairing_desbalanceado",
+      "block": {
+        "id": "t",
+        "method": "contrast",
+        "variant": "heavy_light",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "deadlift_conventional",
+            "role": "heavy",
+            "reps": 3
+          },
+          {
+            "exercise": "back_squat",
+            "role": "heavy",
+            "reps": 3
+          },
+          {
+            "exercise": "box_jump",
+            "role": "explosive",
+            "reps": 4
+          }
+        ],
+        "intent_declared": "power",
+        "params": {},
+        "_touched": {}
+      },
+      "expect_contains": [
+        "contrast_pairs_unbalanced"
+      ]
+    },
+    {
+      "id": "battery_F1_explosivo_8reps",
+      "block": {
+        "id": "t",
+        "method": "contrast",
+        "variant": "heavy_light",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "deadlift_conventional",
+            "role": "heavy",
+            "reps": 3
+          },
+          {
+            "exercise": "box_jump",
+            "role": "explosive",
+            "reps": 8
+          }
+        ],
+        "intent_declared": "power",
+        "params": {},
+        "_touched": {}
+      },
+      "expect_contains": [
+        "contrast_explosive_reps_high"
+      ]
+    },
+    {
+      "id": "schema_fix_target_muscle",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "giant_set",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "curl_dumbbell",
+            "reps": 10
+          },
+          {
+            "exercise": "barbell_curl",
+            "reps": 10
+          },
+          {
+            "exercise": "cable_curl",
+            "reps": 12
+          }
+        ],
+        "intent_declared": "hypertrophy",
+        "params": {},
+        "_touched": {}
+      },
+      "expect_contains": [
+        "param_required_missing"
+      ]
+    },
+    {
+      "id": "p313_drop_rest_too_long",
+      "origin": "P3.1.3 round-trip inmortalizado",
+      "block": {
+        "id": "g1",
+        "method": "drop",
+        "variant": "single_drop",
+        "exercise": "leg_extension",
+        "components": [],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "drops_count": 1,
+          "drop_pct_per_drop": 20,
+          "reps_first_segment": 10,
+          "rest_between_drops_sec": 25,
+          "load_pct_1rm": 75,
+          "rest_inter_set_sec": 180,
+          "sets": 3
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "drop_rest_too_long"
+      ]
+    },
+    {
+      "id": "p313_emom_ascending_exceeds_1rm",
+      "origin": "P3.1.3 round-trip inmortalizado",
+      "block": {
+        "id": "g2",
+        "method": "emom",
+        "variant": "ascending_load",
+        "exercise": "back_squat",
+        "components": [],
+        "intent_declared": "power",
+        "params": {
+          "interval_sec": 90,
+          "total_duration_min": 12,
+          "starting_load_pct_1rm": 90,
+          "load_increment_pct": 5,
+          "increment_every_n_intervals": 1
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "emom_ascending_exceeds_1rm"
+      ]
+    },
+    {
+      "id": "p313_emom_ascending_terminal_load_too_high",
+      "origin": "P3.1.3 round-trip inmortalizado",
+      "block": {
+        "id": "g3",
+        "method": "emom",
+        "variant": "ascending_load",
+        "exercise": "back_squat",
+        "components": [],
+        "intent_declared": "power",
+        "params": {
+          "interval_sec": 90,
+          "total_duration_min": 12,
+          "starting_load_pct_1rm": 82,
+          "load_increment_pct": 2.5,
+          "increment_every_n_intervals": 1
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "emom_ascending_terminal_load_too_high"
+      ]
+    },
+    {
+      "id": "p313_pyramid_inverse_relation_violated",
+      "origin": "P3.1.3 round-trip inmortalizado",
+      "block": {
+        "id": "g4",
+        "method": "pyramid",
+        "variant": "ascending",
+        "exercise": "deadlift_conventional",
+        "components": [],
+        "intent_declared": "strength",
+        "params": {
+          "sets_count": 4,
+          "first_set_load_pct_1rm": 60,
+          "last_set_load_pct_1rm": 90,
+          "first_set_reps": 12,
+          "last_set_reps": 14,
+          "load_progression": "linear",
+          "top_set_rir": 1,
+          "reps_progression": "linear",
+          "rest_inter_set_sec": 180
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "pyramid_inverse_relation_violated"
+      ]
+    },
+    {
+      "id": "p313_mep_reps_not_monotonic_inverse",
+      "origin": "P3.1.3 round-trip inmortalizado",
+      "block": {
+        "id": "g5",
+        "method": "pyramid",
+        "variant": "multi_exercise_pyramid",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "back_squat",
+            "role": "",
+            "reps": ""
+          }
+        ],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "rounds_count": 4,
+          "exercises_per_round": 3,
+          "first_round_load_pct_1rm": 65,
+          "last_round_load_pct_1rm": 85,
+          "first_round_reps": 10,
+          "last_round_reps": 12,
+          "load_progression": "linear",
+          "rest_intra_round_sec": 30,
+          "rest_inter_round_sec": 180
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "mep_reps_not_monotonic_inverse"
+      ]
+    },
+    {
+      "id": "p313_drop_pct_above_maximum",
+      "origin": "P3.1.3 round-trip inmortalizado",
+      "block": {
+        "id": "g6",
+        "method": "drop",
+        "variant": "single_drop",
+        "exercise": "leg_extension",
+        "components": [],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "drops_count": 1,
+          "drop_pct_per_drop": 33,
+          "reps_first_segment": 10,
+          "rest_between_drops_sec": 5,
+          "load_pct_1rm": 75,
+          "rest_inter_set_sec": 180,
+          "sets": 3
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "drop_pct_above_maximum"
+      ]
+    },
+    {
+      "id": "p313_contrast_pair_count_excessive",
+      "origin": "P3.1.3 round-trip inmortalizado",
+      "block": {
+        "id": "g7",
+        "method": "contrast",
+        "variant": "heavy_light",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "back_squat",
+            "role": "heavy",
+            "reps": 3,
+            "load_pct_1rm": 88
+          },
+          {
+            "exercise": "box_jump",
+            "role": "explosive",
+            "reps": 5,
+            "load_pct_1rm": 40
+          }
+        ],
+        "intent_declared": "power",
+        "params": {
+          "total_pairs": 10,
+          "transition_rest_sec": 45,
+          "rest_inter_pair_sec": 240
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "contrast_pair_count_excessive"
+      ]
+    },
+    {
+      "id": "p313_pyramid_wave_count_inconsistent",
+      "origin": "P3.1.3 round-trip inmortalizado",
+      "block": {
+        "id": "g8",
+        "method": "pyramid",
+        "variant": "wave",
+        "exercise": "back_squat",
+        "components": [],
+        "intent_declared": "strength",
+        "params": {
+          "waves_count": 3,
+          "sets_per_wave": 4,
+          "wave_pattern": [
+            5,
+            3,
+            1
+          ],
+          "first_wave_top_load_pct_1rm": 82,
+          "wave_load_increment_pct": 2.5,
+          "rest_inter_wave_sec": 240,
+          "rest_inter_set_sec": 180
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "pyramid_wave_count_inconsistent"
+      ]
+    },
+    {
+      "id": "p313_mep_rounds_count_too_low",
+      "origin": "P3.1.3 round-trip inmortalizado",
+      "block": {
+        "id": "g9",
+        "method": "pyramid",
+        "variant": "multi_exercise_pyramid",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "back_squat",
+            "role": "",
+            "reps": ""
+          }
+        ],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "rounds_count": 2,
+          "exercises_per_round": 3,
+          "first_round_load_pct_1rm": 65,
+          "last_round_load_pct_1rm": 85,
+          "first_round_reps": 10,
+          "last_round_reps": 4,
+          "load_progression": "linear",
+          "rest_intra_round_sec": 30,
+          "rest_inter_round_sec": 180
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "mep_rounds_count_too_low"
+      ]
+    },
+    {
+      "id": "p313_complex_rounds_count_excessive",
+      "origin": "P3.1.3 round-trip inmortalizado",
+      "block": {
+        "id": "g10",
+        "method": "complex",
+        "variant": "olympic_complex",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "clean_pull",
+            "role": "",
+            "reps": 3
+          },
+          {
+            "exercise": "back_squat",
+            "role": "",
+            "reps": 3
+          }
+        ],
+        "intent_declared": "power",
+        "params": {
+          "total_rounds": 8,
+          "shared_load_pct_1rm_of_weakest": 65,
+          "rest_inter_round_sec": 180,
+          "rest_between_components_sec": 2
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "complex_rounds_count_excessive"
+      ]
+    },
+    {
+      "id": "p313_contrast_heavy_load_too_high",
+      "origin": "P3.1.3 round-trip inmortalizado",
+      "block": {
+        "id": "g11",
+        "method": "contrast",
+        "variant": "heavy_light",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "back_squat",
+            "role": "heavy",
+            "reps": 3,
+            "load_pct_1rm": 98
+          },
+          {
+            "exercise": "box_jump",
+            "role": "explosive",
+            "reps": 5,
+            "load_pct_1rm": 40
+          }
+        ],
+        "intent_declared": "power",
+        "params": {
+          "total_pairs": 4,
+          "transition_rest_sec": 45,
+          "rest_inter_pair_sec": 240
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "contrast_heavy_load_too_high"
+      ]
+    },
+    {
+      "id": "p313_contrast_heavy_load_too_low",
+      "origin": "P3.1.3 round-trip inmortalizado",
+      "block": {
+        "id": "g12",
+        "method": "contrast",
+        "variant": "heavy_light",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "back_squat",
+            "role": "heavy",
+            "reps": 3,
+            "load_pct_1rm": 72
+          },
+          {
+            "exercise": "box_jump",
+            "role": "explosive",
+            "reps": 5,
+            "load_pct_1rm": 40
+          }
+        ],
+        "intent_declared": "power",
+        "params": {
+          "total_pairs": 4,
+          "transition_rest_sec": 45,
+          "rest_inter_pair_sec": 240
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "contrast_heavy_load_too_low"
+      ]
+    },
+    {
+      "id": "p313_contrast_explosive_load_too_high",
+      "origin": "P3.1.3 round-trip inmortalizado",
+      "block": {
+        "id": "g13",
+        "method": "contrast",
+        "variant": "heavy_light",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "back_squat",
+            "role": "heavy",
+            "reps": 3,
+            "load_pct_1rm": 88
+          },
+          {
+            "exercise": "box_jump",
+            "role": "explosive",
+            "reps": 5,
+            "load_pct_1rm": 70
+          }
+        ],
+        "intent_declared": "power",
+        "params": {
+          "total_pairs": 4,
+          "transition_rest_sec": 45,
+          "rest_inter_pair_sec": 240
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "contrast_explosive_load_too_high"
+      ]
+    },
+    {
+      "id": "p32_pyramid_total_volume_too_high",
+      "origin": "P3.2 round-trip inmortalizado (aggregate_volume)",
+      "block": {
+        "id": "g14",
+        "method": "pyramid",
+        "variant": "ascending",
+        "exercise": "deadlift_conventional",
+        "components": [],
+        "intent_declared": "strength",
+        "params": {
+          "sets_count": 6,
+          "first_set_load_pct_1rm": 60,
+          "last_set_load_pct_1rm": 85,
+          "first_set_reps": 15,
+          "last_set_reps": 5,
+          "load_progression": "linear",
+          "reps_progression": "linear",
+          "top_set_rir": 1,
+          "rest_inter_set_sec": 180
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "pyramid_total_volume_too_high"
+      ],
+      "expect_absent": [
+        "pyramid_total_volume_too_low"
+      ]
+    },
+    {
+      "id": "p32_pyramid_total_volume_too_low",
+      "origin": "P3.2 round-trip inmortalizado (aggregate_volume)",
+      "block": {
+        "id": "g15",
+        "method": "pyramid",
+        "variant": "descending",
+        "exercise": "deadlift_conventional",
+        "components": [],
+        "intent_declared": "strength",
+        "params": {
+          "sets_count": 3,
+          "first_set_load_pct_1rm": 85,
+          "last_set_load_pct_1rm": 70,
+          "first_set_reps": 5,
+          "last_set_reps": 5,
+          "load_progression": "linear",
+          "reps_progression": "linear",
+          "rest_inter_set_sec": 180
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "pyramid_total_volume_too_low"
+      ],
+      "expect_absent": [
+        "pyramid_total_volume_too_high"
+      ]
+    },
+    {
+      "id": "p32_mep_total_volume_excessive",
+      "origin": "P3.2 round-trip inmortalizado (aggregate_volume)",
+      "block": {
+        "id": "g16",
+        "method": "pyramid",
+        "variant": "multi_exercise_pyramid",
+        "exercise": null,
+        "components": [],
+        "intent_declared": "strength_endurance",
+        "params": {
+          "rounds_count": 5,
+          "exercises_per_round": 3,
+          "first_round_load_pct_1rm": 65,
+          "last_round_load_pct_1rm": 85,
+          "first_round_reps": 12,
+          "last_round_reps": 6,
+          "load_progression": "linear",
+          "rest_intra_round_sec": 30,
+          "rest_inter_round_sec": 180
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "mep_total_volume_excessive"
+      ]
+    },
+    {
+      "id": "p32_rp_mini_tandas_unrealistic",
+      "origin": "P3.2 round-trip inmortalizado (proxy v0.1)",
+      "block": {
+        "id": "g17",
+        "method": "rest_pause",
+        "variant": "myo_reps",
+        "exercise": "leg_extension",
+        "components": [],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "load_pct_1rm": 85,
+          "sets": 2,
+          "activation_reps_target": 8,
+          "activation_rir": 1,
+          "mini_tandas_count_target": 4,
+          "mini_tanda_reps_target": 3,
+          "rest_intra_set_sec": 12,
+          "rest_inter_set_sec": 180
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "rp_mini_tandas_unrealistic"
+      ]
+    },
+    {
+      "id": "p32_emom_collapsed_to_amrap_timecapped",
+      "origin": "P3.2 round-trip inmortalizado",
+      "block": {
+        "id": "g18",
+        "method": "emom",
+        "variant": "every_minute",
+        "exercise": "kb_swing_two_hand",
+        "components": [],
+        "intent_declared": "conditioning",
+        "params": {
+          "interval_sec": 60,
+          "total_duration_min": 1,
+          "work_per_interval": {
+            "reps": 8,
+            "load_pct_1rm": 65
+          },
+          "exercise_count": 1,
+          "reps_per_interval": 8
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "emom_collapsed_to_amrap_timecapped"
+      ]
+    },
+    {
+      "id": "p33_overprescribed_or_load_too_high",
+      "origin": "P3.3 T3 — viability_level >=1 (load 80%, reps 12 → epley 8, delta_pct 50 → hard_fail)",
+      "block": {
+        "id": "g23",
+        "method": "straight",
+        "variant": "default",
+        "exercise": "back_squat",
+        "components": [],
+        "intent_declared": "strength",
+        "params": {
+          "load_pct_1rm": 80,
+          "reps_target": 12,
+          "rir_target": 2,
+          "sets": 4,
+          "rest_inter_set_sec": 180
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "overprescribed_or_load_too_high"
+      ]
+    },
+    {
+      "id": "p33_underloaded_for_rep_range",
+      "origin": "P3.3 T3 — viability_level == -1 (load 70%, reps 5 → epley 12, delta -7)",
+      "block": {
+        "id": "g24",
+        "method": "straight",
+        "variant": "default",
+        "exercise": "back_squat",
+        "components": [],
+        "intent_declared": "strength",
+        "params": {
+          "load_pct_1rm": 70,
+          "reps_target": 5,
+          "rir_target": 2,
+          "sets": 4,
+          "rest_inter_set_sec": 180
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "underloaded_for_rep_range"
+      ]
+    },
+    {
+      "id": "p33_near_max_effort",
+      "origin": "P3.3 T3 — informational, delta in [-1,0] (load 80%, reps 8 → epley 8, delta 0)",
+      "block": {
+        "id": "g25",
+        "method": "straight",
+        "variant": "default",
+        "exercise": "back_squat",
+        "components": [],
+        "intent_declared": "strength",
+        "params": {
+          "load_pct_1rm": 80,
+          "reps_target": 8,
+          "rir_target": 2,
+          "sets": 4,
+          "rest_inter_set_sec": 180
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "near_max_effort"
+      ]
+    },
+    {
+      "id": "p33_cluster_size_exceeds_zone_reps",
+      "origin": "P3.3 T3 — classify_zone RIR=2 (load 98%, rpc 4 → Z1 max 3; 4>3)",
+      "block": {
+        "id": "g26",
+        "method": "cluster",
+        "variant": "singles",
+        "exercise": "back_squat",
+        "components": [],
+        "intent_declared": "max_strength",
+        "params": {
+          "load_pct_1rm": 98,
+          "sets": 5,
+          "reps_per_cluster": 4,
+          "clusters_per_set": 5,
+          "rest_intra_set_sec": 18,
+          "rest_inter_set_sec": 240
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "cluster_size_exceeds_zone_reps"
+      ]
+    },
+    {
+      "id": "p33_viability_clean_guard",
+      "origin": "P3.3 T3 — guarda: straight a defaults (75/8) NO dispara viability ni near_max",
+      "block": {
+        "id": "g27",
+        "method": "straight",
+        "variant": "default",
+        "exercise": "back_squat",
+        "components": [],
+        "intent_declared": "strength",
+        "params": {
+          "load_pct_1rm": 75,
+          "reps_target": 8,
+          "rir_target": 2,
+          "sets": 4,
+          "rest_inter_set_sec": 180
+        },
+        "_touched": {}
+      },
+      "expect_absent": [
+        "overprescribed_or_load_too_high",
+        "underloaded_for_rep_range",
+        "near_max_effort"
+      ]
+    },
+    {
+      "id": "p34_drift_strength_load_low",
+      "origin": "P3.4 equivalencia migración",
+      "block": {
+        "id": "b",
+        "method": "straight",
+        "variant": "default",
+        "exercise": "back_squat",
+        "components": [],
+        "intent_declared": "max_strength",
+        "params": {
+          "load_pct_1rm": 70,
+          "reps_target": 8,
+          "sets": 3,
+          "rest_inter_set_sec": 120
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "drift_strength_load_low"
+      ]
+    },
+    {
+      "id": "p34_drift_hypertrophy_reps_low",
+      "origin": "P3.4 equivalencia migración",
+      "block": {
+        "id": "b",
+        "method": "straight",
+        "variant": "default",
+        "exercise": "back_squat",
+        "components": [],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "load_pct_1rm": 80,
+          "reps_target": 3,
+          "sets": 3,
+          "rest_inter_set_sec": 120
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "drift_hypertrophy_reps_low"
+      ]
+    },
+    {
+      "id": "p34_drift_power_load_high",
+      "origin": "P3.4 equivalencia migración",
+      "block": {
+        "id": "b",
+        "method": "straight",
+        "variant": "default",
+        "exercise": "back_squat",
+        "components": [],
+        "intent_declared": "power",
+        "params": {
+          "load_pct_1rm": 85,
+          "reps_target": 3,
+          "sets": 3,
+          "rest_inter_set_sec": 180
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "drift_power_load_high"
+      ]
+    },
+    {
+      "id": "p34_rest_insufficient_heavy",
+      "origin": "P3.4 equivalencia migración",
+      "block": {
+        "id": "b",
+        "method": "straight",
+        "variant": "default",
+        "exercise": "back_squat",
+        "components": [],
+        "intent_declared": "max_strength",
+        "params": {
+          "load_pct_1rm": 90,
+          "reps_target": 3,
+          "sets": 4,
+          "rest_inter_set_sec": 90
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "rest_insufficient_heavy"
+      ]
+    },
+    {
+      "id": "p34_drift_intent_method_mismatch",
+      "origin": "P3.4 equivalencia migración (afinidad)",
+      "block": {
+        "id": "b",
+        "method": "cluster",
+        "variant": "singles",
+        "exercise": "back_squat",
+        "components": [],
+        "intent_declared": "conditioning",
+        "params": {
+          "reps_per_cluster": 2,
+          "clusters_per_set": 3,
+          "rest_intra_set_sec": 20,
+          "load_pct_1rm": 88,
+          "rest_inter_set_sec": 180,
+          "sets": 4
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "drift_intent_method_mismatch"
+      ]
+    },
+    {
+      "id": "p34_cluster_rest_inversion",
+      "origin": "P3.4 equivalencia migración",
+      "block": {
+        "id": "b",
+        "method": "cluster",
+        "variant": "singles",
+        "exercise": "back_squat",
+        "components": [],
+        "intent_declared": "max_strength",
+        "params": {
+          "reps_per_cluster": 2,
+          "clusters_per_set": 3,
+          "rest_intra_set_sec": 200,
+          "load_pct_1rm": 88,
+          "rest_inter_set_sec": 180,
+          "sets": 4
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "cluster_rest_inversion"
+      ]
+    },
+    {
+      "id": "p34_rest_pause_activation_light",
+      "origin": "P3.4 equivalencia migración",
+      "block": {
+        "id": "b",
+        "method": "rest_pause",
+        "variant": "myo_reps",
+        "exercise": "back_squat",
+        "components": [],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "activation_reps_target": 12,
+          "activation_rir": 4,
+          "mini_tandas_count_target": 4,
+          "rest_intra_set_sec": 15,
+          "load_pct_1rm": 70,
+          "mini_tanda_reps_target": 4,
+          "rest_inter_set_sec": 120,
+          "sets": 3
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "rest_pause_activation_light"
+      ]
+    },
+    {
+      "id": "p34_drop_pct_below_minimum",
+      "origin": "P3.4 equivalencia migración",
+      "block": {
+        "id": "b",
+        "method": "drop",
+        "variant": "single_drop",
+        "exercise": "back_squat",
+        "components": [],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "drops_count": 1,
+          "drop_pct_per_drop": 10,
+          "reps_first_segment": 8,
+          "rest_between_drops_sec": 5,
+          "load_pct_1rm": 75,
+          "rest_inter_set_sec": 120,
+          "sets": 3
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "drop_pct_below_minimum"
+      ]
+    },
+    {
+      "id": "p41_component_without_exercise",
+      "origin": "P4.1 equivalencia F3 EXISTS",
+      "block": {
+        "id": "b",
+        "method": "contrast",
+        "variant": "heavy_light",
+        "exercise": null,
+        "intent_declared": "power",
+        "components": [
+          {
+            "exercise": "back_squat",
+            "role": "heavy",
+            "work_metric": "reps",
+            "work_value": 3
+          },
+          {
+            "exercise": null,
+            "role": "explosive",
+            "work_metric": "reps",
+            "work_value": 3
+          }
+        ],
+        "params": {
+          "total_pairs": 4,
+          "transition_rest_sec": 45,
+          "rest_inter_pair_sec": 240
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "component_without_exercise"
+      ]
+    },
+    {
+      "id": "p41_component_work_undefined",
+      "origin": "P4.1 equivalencia F3 EXISTS",
+      "block": {
+        "id": "b",
+        "method": "contrast",
+        "variant": "heavy_light",
+        "exercise": null,
+        "intent_declared": "power",
+        "components": [
+          {
+            "exercise": "back_squat",
+            "role": "heavy",
+            "work_metric": "reps",
+            "work_value": 3
+          },
+          {
+            "exercise": "box_jump",
+            "role": "explosive",
+            "work_metric": "reps",
+            "work_value": null
+          }
+        ],
+        "params": {
+          "total_pairs": 4,
+          "transition_rest_sec": 45,
+          "rest_inter_pair_sec": 240
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "component_work_undefined"
+      ]
+    },
+    {
+      "id": "p41_contrast_explosive_reps_high",
+      "origin": "P4.1 equivalencia F3 EXISTS (multi-métrica)",
+      "block": {
+        "id": "b",
+        "method": "contrast",
+        "variant": "heavy_light",
+        "exercise": null,
+        "intent_declared": "power",
+        "components": [
+          {
+            "exercise": "back_squat",
+            "role": "heavy",
+            "work_metric": "reps",
+            "work_value": 3
+          },
+          {
+            "exercise": "box_jump",
+            "role": "explosive",
+            "work_metric": "reps",
+            "work_value": 8
+          }
+        ],
+        "params": {
+          "total_pairs": 4,
+          "transition_rest_sec": 45,
+          "rest_inter_pair_sec": 240
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "contrast_explosive_reps_high"
+      ]
+    },
+    {
+      "id": "p41_contrast_explosive_duration_high",
+      "origin": "P4.1 multi-métrica (duration_sec>9)",
+      "block": {
+        "id": "b",
+        "method": "contrast",
+        "variant": "heavy_light",
+        "exercise": null,
+        "intent_declared": "power",
+        "components": [
+          {
+            "exercise": "back_squat",
+            "role": "heavy",
+            "work_metric": "reps",
+            "work_value": 3
+          },
+          {
+            "exercise": "box_jump",
+            "role": "explosive",
+            "work_metric": "duration_sec",
+            "work_value": 12
+          }
+        ],
+        "params": {
+          "total_pairs": 4,
+          "transition_rest_sec": 45,
+          "rest_inter_pair_sec": 240
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "contrast_explosive_reps_high"
+      ]
+    },
+    {
+      "id": "p41_slc_component_reps_atypical",
+      "origin": "P4.1 equivalencia F3 EXISTS (multi-métrica)",
+      "block": {
+        "id": "b",
+        "method": "complex",
+        "variant": "olympic_complex",
+        "exercise": null,
+        "intent_declared": "power",
+        "components": [
+          {
+            "exercise": "hang_clean",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 8
+          }
+        ],
+        "params": {
+          "total_rounds": 4,
+          "shared_load_pct_1rm_of_weakest": 65,
+          "rest_inter_round_sec": 180,
+          "rest_between_components_sec": 2
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "slc_component_reps_atypical"
+      ]
+    },
+    {
+      "id": "p41_contrast_heavy_low_demand",
+      "origin": "P4.1 equivalencia F3 EXISTS (catalog)",
+      "block": {
+        "id": "b",
+        "method": "contrast",
+        "variant": "heavy_light",
+        "exercise": null,
+        "intent_declared": "power",
+        "components": [
+          {
+            "exercise": "leg_curl_lying",
+            "role": "heavy",
+            "work_metric": "reps",
+            "work_value": 3
+          },
+          {
+            "exercise": "box_jump",
+            "role": "explosive",
+            "work_metric": "reps",
+            "work_value": 3
+          }
+        ],
+        "params": {
+          "total_pairs": 4,
+          "transition_rest_sec": 45,
+          "rest_inter_pair_sec": 240
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "contrast_heavy_low_demand"
+      ]
+    },
+    {
+      "id": "p41_contrast_explosive_low_demand",
+      "origin": "P4.1 equivalencia F3 EXISTS (catalog)",
+      "block": {
+        "id": "b",
+        "method": "contrast",
+        "variant": "heavy_light",
+        "exercise": null,
+        "intent_declared": "power",
+        "components": [
+          {
+            "exercise": "back_squat",
+            "role": "heavy",
+            "work_metric": "reps",
+            "work_value": 3
+          },
+          {
+            "exercise": "lateral_raise_dumbbell",
+            "role": "explosive",
+            "work_metric": "reps",
+            "work_value": 3
+          }
+        ],
+        "params": {
+          "total_pairs": 4,
+          "transition_rest_sec": 45,
+          "rest_inter_pair_sec": 240
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "contrast_explosive_low_demand"
+      ]
+    },
+    {
+      "id": "p41_clean_guard_contrast",
+      "origin": "P4.1 guarda: bloque bien formado no dispara F3",
+      "block": {
+        "id": "b",
+        "method": "contrast",
+        "variant": "heavy_light",
+        "exercise": null,
+        "intent_declared": "power",
+        "components": [
+          {
+            "exercise": "back_squat",
+            "role": "heavy",
+            "work_metric": "reps",
+            "work_value": 3
+          },
+          {
+            "exercise": "box_jump",
+            "role": "explosive",
+            "work_metric": "reps",
+            "work_value": 3
+          }
+        ],
+        "params": {
+          "total_pairs": 4,
+          "transition_rest_sec": 45,
+          "rest_inter_pair_sec": 240
+        },
+        "_touched": {}
+      },
+      "expect_absent": [
+        "component_without_exercise",
+        "component_work_undefined",
+        "contrast_explosive_reps_high",
+        "contrast_heavy_low_demand",
+        "contrast_explosive_low_demand"
+      ]
+    },
+    {
+      "id": "p42_contrast_components_insufficient",
+      "origin": "P4.2 equivalencia F1 COUNT (split contrast)",
+      "block": {
+        "id": "b",
+        "method": "contrast",
+        "variant": "heavy_light",
+        "exercise": null,
+        "intent_declared": "power",
+        "components": [
+          {
+            "exercise": "deadlift_conventional",
+            "role": "heavy",
+            "work_metric": "reps",
+            "work_value": 3
+          }
+        ],
+        "params": {
+          "total_pairs": 4,
+          "transition_rest_sec": 45,
+          "rest_inter_pair_sec": 240
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "contrast_components_insufficient"
+      ]
+    },
+    {
+      "id": "p42_complex_components_insufficient",
+      "origin": "P4.2 equivalencia F1 COUNT (split complex)",
+      "block": {
+        "id": "b",
+        "method": "complex",
+        "variant": "olympic_complex",
+        "exercise": null,
+        "intent_declared": "power",
+        "components": [
+          {
+            "exercise": "power_clean",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 3
+          }
+        ],
+        "params": {},
+        "_touched": {}
+      },
+      "expect_contains": [
+        "complex_components_insufficient"
+      ]
+    },
+    {
+      "id": "p42_contrast_pairing_invalid",
+      "origin": "P4.2 equivalencia F4 ROLE-PRESENCE (heavy presente, explosive ausente)",
+      "block": {
+        "id": "b",
+        "method": "contrast",
+        "variant": "heavy_light",
+        "exercise": null,
+        "intent_declared": "power",
+        "components": [
+          {
+            "exercise": "deadlift_conventional",
+            "role": "heavy",
+            "work_metric": "reps",
+            "work_value": 3
+          },
+          {
+            "exercise": "back_squat",
+            "role": "heavy",
+            "work_metric": "reps",
+            "work_value": 3
+          }
+        ],
+        "params": {
+          "total_pairs": 4,
+          "transition_rest_sec": 45,
+          "rest_inter_pair_sec": 240
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "contrast_pairing_invalid"
+      ],
+      "expect_absent": [
+        "contrast_pairs_unbalanced"
+      ]
+    },
+    {
+      "id": "p42_clean_guard_struct",
+      "origin": "P4.2 guarda: complex bien formado (3 distintos, implemento homogéneo) no dispara F1/F2/F5",
+      "block": {
+        "id": "b",
+        "method": "complex",
+        "variant": "olympic_complex",
+        "exercise": null,
+        "intent_declared": "power",
+        "components": [
+          {
+            "exercise": "power_clean",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 3
+          },
+          {
+            "exercise": "push_jerk",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 3
+          },
+          {
+            "exercise": "hang_clean",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 3
+          }
+        ],
+        "params": {},
+        "_touched": {}
+      },
+      "expect_absent": [
+        "complex_components_insufficient",
+        "component_exercise_duplicated",
+        "slc_implement_heterogeneous",
+        "contrast_pairing_invalid"
+      ]
+    },
+    {
+      "id": "p43_emom_work_undefined",
+      "origin": "P4.3 F6: intervalo sin trabajo (work_per_interval vacío)",
+      "block": {
+        "id": "b",
+        "method": "emom",
+        "variant": "every_minute",
+        "exercise": null,
+        "intent_declared": "conditioning",
+        "components": [],
+        "work_per_interval": [],
+        "params": {
+          "interval_sec": 60,
+          "total_duration_min": 10,
+          "exercise_count": 1
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "emom_work_undefined"
+      ],
+      "expect_absent": [
+        "emom_density_impossible",
+        "emom_density_high"
+      ]
+    },
+    {
+      "id": "p43_emom_density_impossible",
+      "origin": "P4.3 F6: trabajo estimado >= intervalo",
+      "block": {
+        "id": "b",
+        "method": "emom",
+        "variant": "every_minute",
+        "exercise": null,
+        "intent_declared": "conditioning",
+        "components": [],
+        "work_per_interval": [
+          {
+            "exercise": "kb_swing_two_hand",
+            "role": "",
+            "work_metric": "duration_sec",
+            "work_value": 70
+          }
+        ],
+        "params": {
+          "interval_sec": 60,
+          "total_duration_min": 10,
+          "exercise_count": 1
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "emom_density_impossible"
+      ]
+    },
+    {
+      "id": "p43_emom_density_high",
+      "origin": "P4.3 F6: trabajo estimado entre 85% y 100% del intervalo",
+      "block": {
+        "id": "b",
+        "method": "emom",
+        "variant": "every_minute",
+        "exercise": null,
+        "intent_declared": "conditioning",
+        "components": [],
+        "work_per_interval": [
+          {
+            "exercise": "kb_swing_two_hand",
+            "role": "",
+            "work_metric": "duration_sec",
+            "work_value": 55
+          }
+        ],
+        "params": {
+          "interval_sec": 60,
+          "total_duration_min": 10,
+          "exercise_count": 1
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "emom_density_high"
+      ],
+      "expect_absent": [
+        "emom_density_impossible"
+      ]
+    },
+    {
+      "id": "p43_emom_clean_guard",
+      "origin": "P4.3 guarda: densidad holgada no dispara F6",
+      "block": {
+        "id": "b",
+        "method": "emom",
+        "variant": "every_minute",
+        "exercise": null,
+        "intent_declared": "conditioning",
+        "components": [],
+        "work_per_interval": [
+          {
+            "exercise": "kb_swing_two_hand",
+            "role": "",
+            "work_metric": "duration_sec",
+            "work_value": 12
+          }
+        ],
+        "params": {
+          "interval_sec": 60,
+          "total_duration_min": 10,
+          "exercise_count": 1
+        },
+        "_touched": {}
+      },
+      "expect_absent": [
+        "emom_work_undefined",
+        "emom_density_impossible",
+        "emom_density_high"
+      ]
+    },
+    {
+      "id": "p44_emom_work_too_light",
+      "origin": "P4.4 caracterización: trabajo < 20% del intervalo",
+      "block": {
+        "id": "b",
+        "method": "emom",
+        "variant": "every_minute",
+        "exercise": null,
+        "intent_declared": "conditioning",
+        "components": [],
+        "work_per_interval": [
+          {
+            "exercise": "kb_swing_two_hand",
+            "role": "",
+            "work_metric": "duration_sec",
+            "work_value": 6
+          }
+        ],
+        "params": {
+          "interval_sec": 60,
+          "total_duration_min": 10,
+          "exercise_count": 1
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "emom_work_too_light_for_interval"
+      ],
+      "expect_absent": [
+        "emom_density_high",
+        "emom_density_impossible"
+      ]
+    },
+    {
+      "id": "p44_complex_duration_excessive",
+      "origin": "P4.4 caracterización: duración estimada > 45 min",
+      "block": {
+        "id": "b",
+        "method": "complex",
+        "variant": "olympic_complex",
+        "exercise": null,
+        "intent_declared": "power",
+        "components": [
+          {
+            "exercise": "power_clean",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 150
+          },
+          {
+            "exercise": "push_jerk",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 150
+          }
+        ],
+        "work_per_interval": [],
+        "params": {
+          "total_rounds": 4,
+          "rest_inter_round_sec": 180,
+          "rest_between_components_sec": 2,
+          "shared_load_pct_1rm_of_weakest": 65
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "complex_estimated_duration_excessive"
+      ],
+      "expect_absent": [
+        "complex_estimated_duration_too_short"
+      ]
+    },
+    {
+      "id": "p44_complex_duration_too_short",
+      "origin": "P4.4 caracterización: duración estimada < 60 s",
+      "block": {
+        "id": "b",
+        "method": "complex",
+        "variant": "olympic_complex",
+        "exercise": null,
+        "intent_declared": "power",
+        "components": [
+          {
+            "exercise": "power_clean",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 1
+          },
+          {
+            "exercise": "push_jerk",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 1
+          }
+        ],
+        "work_per_interval": [],
+        "params": {
+          "total_rounds": 1,
+          "rest_inter_round_sec": 0,
+          "rest_between_components_sec": 0,
+          "shared_load_pct_1rm_of_weakest": 65
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "complex_estimated_duration_too_short"
+      ],
+      "expect_absent": [
+        "complex_estimated_duration_excessive"
+      ]
+    },
+    {
+      "id": "p44_chipper_exhaustive",
+      "origin": "P4.4 caracterización: chipper sin cap, estimación > 30 min",
+      "block": {
+        "id": "b",
+        "method": "complex",
+        "variant": "chipper",
+        "exercise": null,
+        "intent_declared": "conditioning",
+        "components": [
+          {
+            "exercise": "burpee",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 400
+          },
+          {
+            "exercise": "wall_ball",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 400
+          }
+        ],
+        "work_per_interval": [],
+        "params": {
+          "time_cap_min": null,
+          "rest_allowed": true
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "chipper_estimated_duration_exhaustive"
+      ],
+      "expect_absent": [
+        "chipper_estimated_exceeds_cap"
+      ]
+    },
+    {
+      "id": "p44_chipper_exceeds_cap",
+      "origin": "P4.4 caracterización: chipper estimado >= time_cap",
+      "block": {
+        "id": "b",
+        "method": "complex",
+        "variant": "chipper",
+        "exercise": null,
+        "intent_declared": "conditioning",
+        "components": [
+          {
+            "exercise": "burpee",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 100
+          },
+          {
+            "exercise": "wall_ball",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 100
+          }
+        ],
+        "work_per_interval": [],
+        "params": {
+          "time_cap_min": 5,
+          "rest_allowed": true
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "chipper_estimated_exceeds_cap"
+      ],
+      "expect_absent": [
+        "chipper_estimated_duration_exhaustive"
+      ]
+    },
+    {
+      "id": "p44_tcc_rounds_too_few",
+      "origin": "P4.4 caracterización: rondas estimadas < 3 en el cap",
+      "block": {
+        "id": "b",
+        "method": "complex",
+        "variant": "time_capped_circuit",
+        "exercise": null,
+        "intent_declared": "conditioning",
+        "components": [
+          {
+            "exercise": "burpee",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 50
+          },
+          {
+            "exercise": "wall_ball",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 50
+          }
+        ],
+        "work_per_interval": [],
+        "params": {
+          "time_cap_min": 10,
+          "rest_between_components_sec": 0,
+          "target_rounds": null
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "tcc_rounds_too_few"
+      ]
+    },
+    {
+      "id": "p44_tcc_target_mismatch",
+      "origin": "P4.4 caracterización: rondas estimadas vs target difieren >3",
+      "block": {
+        "id": "b",
+        "method": "complex",
+        "variant": "time_capped_circuit",
+        "exercise": null,
+        "intent_declared": "conditioning",
+        "components": [
+          {
+            "exercise": "burpee",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 50
+          },
+          {
+            "exercise": "wall_ball",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 50
+          }
+        ],
+        "work_per_interval": [],
+        "params": {
+          "time_cap_min": 10,
+          "rest_between_components_sec": 0,
+          "target_rounds": 10
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "tcc_target_rounds_mismatch_estimate"
+      ]
+    },
+    {
+      "id": "p44_circuit_duration_mismatch",
+      "origin": "P4.4 caracterización: duración estimada vs target >30%",
+      "block": {
+        "id": "b",
+        "method": "complex",
+        "variant": "fixed_round_circuit",
+        "exercise": null,
+        "intent_declared": "conditioning",
+        "components": [
+          {
+            "exercise": "burpee",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 5
+          },
+          {
+            "exercise": "wall_ball",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 5
+          }
+        ],
+        "work_per_interval": [],
+        "params": {
+          "total_rounds": 4,
+          "rest_between_components_sec": 0,
+          "rest_inter_round_sec": 60,
+          "target_total_duration_min": 15
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "circuit_duration_mismatch_target"
+      ]
+    },
+    {
+      "id": "p44_duration_clean_guard",
+      "origin": "P4.4 guarda: chipper moderado sin cap no dispara duración",
+      "block": {
+        "id": "b",
+        "method": "complex",
+        "variant": "chipper",
+        "exercise": null,
+        "intent_declared": "conditioning",
+        "components": [
+          {
+            "exercise": "burpee",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 30
+          },
+          {
+            "exercise": "wall_ball",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 40
+          }
+        ],
+        "work_per_interval": [],
+        "params": {
+          "time_cap_min": null,
+          "rest_allowed": true
+        },
+        "_touched": {}
+      },
+      "expect_absent": [
+        "chipper_estimated_duration_exhaustive",
+        "chipper_estimated_exceeds_cap"
+      ]
+    },
+    {
+      "id": "p51_chipper_reps_not_monotonic",
+      "origin": "P5.1 (D4) golden — chipper monotonic",
+      "block": {
+        "id": "p51_chipper_reps_not_monotonic",
+        "method": "complex",
+        "variant": "chipper",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "burpee",
+            "reps": 40
+          },
+          {
+            "exercise": "wall_ball",
+            "reps": 20
+          },
+          {
+            "exercise": "box_jump",
+            "reps": 50
+          },
+          {
+            "exercise": "push_up",
+            "reps": 15
+          }
+        ],
+        "intent_declared": "conditioning",
+        "params": {
+          "rest_allowed": true
+        }
+      },
+      "expect_contains": [
+        "chipper_reps_progression_unusual"
+      ],
+      "expect_absent": []
+    },
+    {
+      "id": "p51_chipper_clean_guard",
+      "origin": "P5.1 (D4) golden — chipper monotonic",
+      "block": {
+        "id": "p51_chipper_clean_guard",
+        "method": "complex",
+        "variant": "chipper",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "burpee",
+            "reps": 50
+          },
+          {
+            "exercise": "wall_ball",
+            "reps": 40
+          },
+          {
+            "exercise": "box_jump",
+            "reps": 30
+          },
+          {
+            "exercise": "push_up",
+            "reps": 20
+          }
+        ],
+        "intent_declared": "conditioning",
+        "params": {
+          "rest_allowed": true
+        }
+      },
+      "expect_contains": [],
+      "expect_absent": [
+        "chipper_reps_progression_unusual"
+      ]
+    },
+    {
+      "id": "p51_pyramid_asc_not_monotonic",
+      "origin": "P5.1 golden — pyramid/mep ramp",
+      "block": {
+        "id": "p51_pyramid_asc_not_monotonic",
+        "method": "pyramid",
+        "variant": "ascending",
+        "exercise": "back_squat",
+        "components": [],
+        "set_ramp": [
+          {
+            "load_pct_1rm": 60,
+            "reps": 12
+          },
+          {
+            "load_pct_1rm": 80,
+            "reps": 8
+          },
+          {
+            "load_pct_1rm": 70,
+            "reps": 6
+          },
+          {
+            "load_pct_1rm": 90,
+            "reps": 3
+          }
+        ],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "load_progression": "custom",
+          "sets_count": 4,
+          "first_set_load_pct_1rm": 60,
+          "last_set_load_pct_1rm": 90,
+          "first_set_reps": 12,
+          "last_set_reps": 3
+        }
+      },
+      "expect_contains": [
+        "pyramid_load_not_monotonic_asc"
+      ],
+      "expect_absent": []
+    },
+    {
+      "id": "p51_pyramid_asc_clean",
+      "origin": "P5.1 golden — pyramid/mep ramp",
+      "block": {
+        "id": "p51_pyramid_asc_clean",
+        "method": "pyramid",
+        "variant": "ascending",
+        "exercise": "back_squat",
+        "components": [],
+        "set_ramp": [
+          {
+            "load_pct_1rm": 60,
+            "reps": 12
+          },
+          {
+            "load_pct_1rm": 70,
+            "reps": 8
+          },
+          {
+            "load_pct_1rm": 80,
+            "reps": 5
+          },
+          {
+            "load_pct_1rm": 90,
+            "reps": 3
+          }
+        ],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "load_progression": "custom",
+          "sets_count": 4,
+          "first_set_load_pct_1rm": 60,
+          "last_set_load_pct_1rm": 90,
+          "first_set_reps": 12,
+          "last_set_reps": 3
+        }
+      },
+      "expect_contains": [],
+      "expect_absent": [
+        "pyramid_load_not_monotonic_asc"
+      ]
+    },
+    {
+      "id": "p51_pyramid_desc_not_monotonic",
+      "origin": "P5.1 golden — pyramid/mep ramp",
+      "block": {
+        "id": "p51_pyramid_desc_not_monotonic",
+        "method": "pyramid",
+        "variant": "descending",
+        "exercise": "back_squat",
+        "components": [],
+        "set_ramp": [
+          {
+            "load_pct_1rm": 88,
+            "reps": 4
+          },
+          {
+            "load_pct_1rm": 70,
+            "reps": 8
+          },
+          {
+            "load_pct_1rm": 75,
+            "reps": 6
+          },
+          {
+            "load_pct_1rm": 60,
+            "reps": 12
+          }
+        ],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "load_progression": "custom",
+          "sets_count": 4,
+          "first_set_load_pct_1rm": 88,
+          "last_set_load_pct_1rm": 65,
+          "first_set_reps": 4,
+          "last_set_reps": 12
+        }
+      },
+      "expect_contains": [
+        "pyramid_load_not_monotonic_desc"
+      ],
+      "expect_absent": []
+    },
+    {
+      "id": "p51_pyramid_top_set_outside_zone",
+      "origin": "P5.1 golden — pyramid/mep ramp",
+      "block": {
+        "id": "p51_pyramid_top_set_outside_zone",
+        "method": "pyramid",
+        "variant": "ascending",
+        "exercise": "back_squat",
+        "components": [],
+        "set_ramp": [],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "load_progression": "linear",
+          "sets_count": 4,
+          "first_set_load_pct_1rm": 60,
+          "last_set_load_pct_1rm": 95,
+          "first_set_reps": 12,
+          "last_set_reps": 8
+        }
+      },
+      "expect_contains": [
+        "pyramid_top_set_outside_zone_asc"
+      ],
+      "expect_absent": []
+    },
+    {
+      "id": "p51_mep_not_monotonic",
+      "origin": "P5.1 golden — pyramid/mep ramp",
+      "block": {
+        "id": "p51_mep_not_monotonic",
+        "method": "pyramid",
+        "variant": "multi_exercise_pyramid",
+        "exercise": "back_squat",
+        "components": [],
+        "round_plan": [
+          {
+            "load_pct_1rm": 65,
+            "reps": 10
+          },
+          {
+            "load_pct_1rm": 80,
+            "reps": 6
+          },
+          {
+            "load_pct_1rm": 75,
+            "reps": 5
+          },
+          {
+            "load_pct_1rm": 85,
+            "reps": 4
+          }
+        ],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "load_progression": "custom",
+          "rounds_count": 4,
+          "exercises_per_round": 3,
+          "first_round_load_pct_1rm": 65,
+          "last_round_load_pct_1rm": 85,
+          "first_round_reps": 10,
+          "last_round_reps": 4
+        }
+      },
+      "expect_contains": [
+        "mep_load_not_monotonic_across_rounds"
+      ],
+      "expect_absent": []
+    },
+    {
+      "id": "p51_mep_clean",
+      "origin": "P5.1 golden — pyramid/mep ramp",
+      "block": {
+        "id": "p51_mep_clean",
+        "method": "pyramid",
+        "variant": "multi_exercise_pyramid",
+        "exercise": "back_squat",
+        "components": [],
+        "round_plan": [
+          {
+            "load_pct_1rm": 65,
+            "reps": 10
+          },
+          {
+            "load_pct_1rm": 72,
+            "reps": 8
+          },
+          {
+            "load_pct_1rm": 80,
+            "reps": 5
+          },
+          {
+            "load_pct_1rm": 85,
+            "reps": 4
+          }
+        ],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "load_progression": "custom",
+          "rounds_count": 4,
+          "exercises_per_round": 3,
+          "first_round_load_pct_1rm": 65,
+          "last_round_load_pct_1rm": 85,
+          "first_round_reps": 10,
+          "last_round_reps": 4
+        }
+      },
+      "expect_contains": [],
+      "expect_absent": [
+        "mep_load_not_monotonic_across_rounds"
+      ]
+    },
+    {
+      "id": "p52_mech_no_progression",
+      "origin": "P5.2 golden — mechanical_drop",
+      "block": {
+        "id": "p52_mech_no_progression",
+        "method": "drop",
+        "variant": "mechanical_drop",
+        "exercise": "leg_extension",
+        "components": [],
+        "mechanical_progression": [],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "mechanism": "leverage",
+          "drops_count": 2
+        }
+      },
+      "expect_contains": [
+        "mechanical_drop_no_progression_declared"
+      ],
+      "expect_absent": []
+    },
+    {
+      "id": "p52_mech_length_mismatch",
+      "origin": "P5.2 golden — mechanical_drop",
+      "block": {
+        "id": "p52_mech_length_mismatch",
+        "method": "drop",
+        "variant": "mechanical_drop",
+        "exercise": "leg_extension",
+        "components": [],
+        "mechanical_progression": [
+          {
+            "exercise": "leg_extension",
+            "difficulty_index_override": 4.0
+          },
+          {
+            "exercise": "leg_extension",
+            "difficulty_index_override": 3.0
+          }
+        ],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "mechanism": "leverage",
+          "drops_count": 2
+        }
+      },
+      "expect_contains": [
+        "mechanical_drop_progression_length_mismatch"
+      ],
+      "expect_absent": [
+        "mechanical_drop_no_progression_declared"
+      ]
+    },
+    {
+      "id": "p52_mech_demand_not_decreasing",
+      "origin": "P5.2 golden — mechanical_drop",
+      "block": {
+        "id": "p52_mech_demand_not_decreasing",
+        "method": "drop",
+        "variant": "mechanical_drop",
+        "exercise": "leg_extension",
+        "components": [],
+        "mechanical_progression": [
+          {
+            "exercise": "leg_extension",
+            "difficulty_index_override": 4.0
+          },
+          {
+            "exercise": "leg_extension",
+            "difficulty_index_override": 2.0
+          },
+          {
+            "exercise": "leg_extension",
+            "difficulty_index_override": 3.0
+          }
+        ],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "mechanism": "leverage",
+          "drops_count": 2
+        }
+      },
+      "expect_contains": [
+        "mechanical_drop_demand_not_decreasing"
+      ],
+      "expect_absent": [
+        "mechanical_drop_progression_length_mismatch"
+      ]
+    },
+    {
+      "id": "p52_mech_rom_changes",
+      "origin": "P5.2 golden — mechanical_drop",
+      "block": {
+        "id": "p52_mech_rom_changes",
+        "method": "drop",
+        "variant": "mechanical_drop",
+        "exercise": "leg_extension",
+        "components": [],
+        "mechanical_progression": [
+          {
+            "exercise": "leg_extension",
+            "difficulty_index_override": 4.0
+          },
+          {
+            "exercise": "leg_curl_lying",
+            "difficulty_index_override": 3.0
+          },
+          {
+            "exercise": "leg_extension",
+            "difficulty_index_override": 2.0
+          }
+        ],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "mechanism": "range_of_motion",
+          "drops_count": 2
+        }
+      },
+      "expect_contains": [
+        "mechanical_drop_rom_changes_exercise"
+      ],
+      "expect_absent": []
+    },
+    {
+      "id": "p52_mech_step_not_in_catalog",
+      "origin": "P5.2 golden — mechanical_drop",
+      "block": {
+        "id": "p52_mech_step_not_in_catalog",
+        "method": "drop",
+        "variant": "mechanical_drop",
+        "exercise": "leg_extension",
+        "components": [],
+        "mechanical_progression": [
+          {
+            "exercise": "leg_extension",
+            "difficulty_index_override": 4.0
+          },
+          {
+            "exercise": "totally_fake_lift_xyz",
+            "difficulty_index_override": 3.0
+          },
+          {
+            "exercise": "leg_extension",
+            "difficulty_index_override": 2.0
+          }
+        ],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "mechanism": "leverage",
+          "drops_count": 2
+        }
+      },
+      "expect_contains": [
+        "mechanical_drop_step_not_in_catalog"
+      ],
+      "expect_absent": []
+    },
+    {
+      "id": "p52_mech_clean",
+      "origin": "P5.2 golden — mechanical_drop",
+      "block": {
+        "id": "p52_mech_clean",
+        "method": "drop",
+        "variant": "mechanical_drop",
+        "exercise": "leg_extension",
+        "components": [],
+        "mechanical_progression": [
+          {
+            "exercise": "leg_extension",
+            "difficulty_index_override": 4.0
+          },
+          {
+            "exercise": "leg_extension",
+            "difficulty_index_override": 3.0
+          },
+          {
+            "exercise": "leg_extension",
+            "difficulty_index_override": 2.0
+          }
+        ],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "mechanism": "leverage",
+          "drops_count": 2
+        }
+      },
+      "expect_contains": [],
+      "expect_absent": [
+        "mechanical_drop_no_progression_declared",
+        "mechanical_drop_progression_length_mismatch",
+        "mechanical_drop_demand_not_decreasing",
+        "mechanical_drop_rom_changes_exercise",
+        "mechanical_drop_step_not_in_catalog"
+      ]
+    },
+    {
+      "id": "p53_ags_clean",
+      "origin": "P5.3 golden — AGS válido (2 pares antagonistas)",
+      "block": {
+        "id": "p53_ags_clean",
+        "method": "complex",
+        "variant": "antagonist_giant_set",
+        "components": [
+          {
+            "exercise": "curl_dumbbell",
+            "work_metric": "reps",
+            "work_value": 10,
+            "pair_index": 0,
+            "role_in_pair": "agonist"
+          },
+          {
+            "exercise": "triceps_pushdown",
+            "work_metric": "reps",
+            "work_value": 10,
+            "pair_index": 0,
+            "role_in_pair": "antagonist"
+          },
+          {
+            "exercise": "leg_extension",
+            "work_metric": "reps",
+            "work_value": 12,
+            "pair_index": 1,
+            "role_in_pair": "agonist"
+          },
+          {
+            "exercise": "leg_curl_lying",
+            "work_metric": "reps",
+            "work_value": 12,
+            "pair_index": 1,
+            "role_in_pair": "antagonist"
+          }
+        ],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "total_rounds": 3,
+          "pairs_count": 2,
+          "rest_intra_pair_sec": 15,
+          "rest_inter_pair_sec": 60,
+          "rest_inter_round_sec": 120
+        }
+      },
+      "expect_contains": [],
+      "expect_absent": [
+        "ags_components_count_invalid",
+        "ags_pair_count_mismatch",
+        "ags_pair_index_invalid",
+        "ags_pair_not_antagonistic",
+        "ags_role_in_pair_undeclared"
+      ]
+    },
+    {
+      "id": "p53_ags_count",
+      "origin": "P5.3 golden — components != pairs_count*2",
+      "block": {
+        "id": "p53_ags_count",
+        "method": "complex",
+        "variant": "antagonist_giant_set",
+        "components": [
+          {
+            "exercise": "curl_dumbbell",
+            "work_metric": "reps",
+            "work_value": 10,
+            "pair_index": 0,
+            "role_in_pair": "agonist"
+          },
+          {
+            "exercise": "triceps_pushdown",
+            "work_metric": "reps",
+            "work_value": 10,
+            "pair_index": 0,
+            "role_in_pair": "antagonist"
+          },
+          {
+            "exercise": "leg_extension",
+            "work_metric": "reps",
+            "work_value": 12,
+            "pair_index": 1,
+            "role_in_pair": "agonist"
+          }
+        ],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "total_rounds": 3,
+          "pairs_count": 2,
+          "rest_intra_pair_sec": 15,
+          "rest_inter_pair_sec": 60,
+          "rest_inter_round_sec": 120
+        }
+      },
+      "expect_contains": [
+        "ags_components_count_invalid"
+      ]
+    },
+    {
+      "id": "p53_ags_role_undeclared",
+      "origin": "P5.3 golden — role_in_pair sin declarar",
+      "block": {
+        "id": "p53_ags_role_undeclared",
+        "method": "complex",
+        "variant": "antagonist_giant_set",
+        "components": [
+          {
+            "exercise": "curl_dumbbell",
+            "work_metric": "reps",
+            "work_value": 10,
+            "pair_index": 0,
+            "role_in_pair": "agonist"
+          },
+          {
+            "exercise": "triceps_pushdown",
+            "work_metric": "reps",
+            "work_value": 10,
+            "pair_index": 0,
+            "role_in_pair": ""
+          },
+          {
+            "exercise": "leg_extension",
+            "work_metric": "reps",
+            "work_value": 12,
+            "pair_index": 1,
+            "role_in_pair": "agonist"
+          },
+          {
+            "exercise": "leg_curl_lying",
+            "work_metric": "reps",
+            "work_value": 12,
+            "pair_index": 1,
+            "role_in_pair": "antagonist"
+          }
+        ],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "total_rounds": 3,
+          "pairs_count": 2,
+          "rest_intra_pair_sec": 15,
+          "rest_inter_pair_sec": 60,
+          "rest_inter_round_sec": 120
+        }
+      },
+      "expect_contains": [
+        "ags_role_in_pair_undeclared"
+      ]
+    },
+    {
+      "id": "p53_ags_pair_index_invalid",
+      "origin": "P5.3 golden — pair_index fuera de [0,pairs_count-1]",
+      "block": {
+        "id": "p53_ags_pair_index_invalid",
+        "method": "complex",
+        "variant": "antagonist_giant_set",
+        "components": [
+          {
+            "exercise": "curl_dumbbell",
+            "work_metric": "reps",
+            "work_value": 10,
+            "pair_index": 0,
+            "role_in_pair": "agonist"
+          },
+          {
+            "exercise": "triceps_pushdown",
+            "work_metric": "reps",
+            "work_value": 10,
+            "pair_index": 0,
+            "role_in_pair": "antagonist"
+          },
+          {
+            "exercise": "leg_extension",
+            "work_metric": "reps",
+            "work_value": 12,
+            "pair_index": 5,
+            "role_in_pair": "agonist"
+          },
+          {
+            "exercise": "leg_curl_lying",
+            "work_metric": "reps",
+            "work_value": 12,
+            "pair_index": 5,
+            "role_in_pair": "antagonist"
+          }
+        ],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "total_rounds": 3,
+          "pairs_count": 2,
+          "rest_intra_pair_sec": 15,
+          "rest_inter_pair_sec": 60,
+          "rest_inter_round_sec": 120
+        }
+      },
+      "expect_contains": [
+        "ags_pair_index_invalid"
+      ]
+    },
+    {
+      "id": "p53_ags_pair_mismatch",
+      "origin": "P5.3 golden — pair_index sin aparecer 2 veces",
+      "block": {
+        "id": "p53_ags_pair_mismatch",
+        "method": "complex",
+        "variant": "antagonist_giant_set",
+        "components": [
+          {
+            "exercise": "curl_dumbbell",
+            "work_metric": "reps",
+            "work_value": 10,
+            "pair_index": 0,
+            "role_in_pair": "agonist"
+          },
+          {
+            "exercise": "triceps_pushdown",
+            "work_metric": "reps",
+            "work_value": 10,
+            "pair_index": 0,
+            "role_in_pair": "antagonist"
+          },
+          {
+            "exercise": "leg_extension",
+            "work_metric": "reps",
+            "work_value": 12,
+            "pair_index": 0,
+            "role_in_pair": "agonist"
+          },
+          {
+            "exercise": "leg_curl_lying",
+            "work_metric": "reps",
+            "work_value": 12,
+            "pair_index": 1,
+            "role_in_pair": "antagonist"
+          }
+        ],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "total_rounds": 3,
+          "pairs_count": 2,
+          "rest_intra_pair_sec": 15,
+          "rest_inter_pair_sec": 60,
+          "rest_inter_round_sec": 120
+        }
+      },
+      "expect_contains": [
+        "ags_pair_count_mismatch"
+      ],
+      "expect_absent": [
+        "ags_components_count_invalid",
+        "ags_pair_index_invalid"
+      ]
+    },
+    {
+      "id": "p53_ags_not_antagonistic",
+      "origin": "P5.3 golden — par con mismo movement_pattern",
+      "block": {
+        "id": "p53_ags_not_antagonistic",
+        "method": "complex",
+        "variant": "antagonist_giant_set",
+        "components": [
+          {
+            "exercise": "curl_dumbbell",
+            "work_metric": "reps",
+            "work_value": 10,
+            "pair_index": 0,
+            "role_in_pair": "agonist"
+          },
+          {
+            "exercise": "barbell_curl",
+            "work_metric": "reps",
+            "work_value": 10,
+            "pair_index": 0,
+            "role_in_pair": "antagonist"
+          },
+          {
+            "exercise": "leg_extension",
+            "work_metric": "reps",
+            "work_value": 12,
+            "pair_index": 1,
+            "role_in_pair": "agonist"
+          },
+          {
+            "exercise": "leg_curl_lying",
+            "work_metric": "reps",
+            "work_value": 12,
+            "pair_index": 1,
+            "role_in_pair": "antagonist"
+          }
+        ],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "total_rounds": 3,
+          "pairs_count": 2,
+          "rest_intra_pair_sec": 15,
+          "rest_inter_pair_sec": 60,
+          "rest_inter_round_sec": 120
+        }
+      },
+      "expect_contains": [
+        "ags_pair_not_antagonistic"
+      ],
+      "expect_absent": [
+        "ags_components_count_invalid",
+        "ags_pair_count_mismatch",
+        "ags_pair_index_invalid"
+      ]
+    },
+    {
+      "id": "p54_alt_clean",
+      "origin": "P5.4 golden — EMOM alternating con rotación válida",
+      "block": {
+        "id": "p54_alt_clean",
+        "method": "emom",
+        "variant": "alternating",
+        "exercise": "kb_swing_two_hand",
+        "intent_declared": "conditioning",
+        "exercises_rotation": [
+          {
+            "exercise": "kb_swing_two_hand",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 20
+          },
+          {
+            "exercise": "kb_clean",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 8
+          }
+        ],
+        "params": {
+          "interval_sec": 60,
+          "total_duration_min": 10,
+          "exercise_count": 2
+        }
+      },
+      "expect_contains": [],
+      "expect_absent": [
+        "emom_alternating_rotation_empty"
+      ]
+    },
+    {
+      "id": "p54_alt_empty",
+      "origin": "P5.4 golden — rotación vacía (<2)",
+      "block": {
+        "id": "p54_alt_empty",
+        "method": "emom",
+        "variant": "alternating",
+        "exercise": "kb_swing_two_hand",
+        "intent_declared": "conditioning",
+        "exercises_rotation": [
+          {
+            "exercise": "kb_swing_two_hand",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 20
+          }
+        ],
+        "params": {
+          "interval_sec": 60,
+          "total_duration_min": 10,
+          "exercise_count": 2
+        }
+      },
+      "expect_contains": [
+        "emom_alternating_rotation_empty"
+      ]
+    },
+    {
+      "id": "p55a_giant_set_pattern_mixed",
+      "note": "P5.5a FI — giant_set con movement_patterns distintos (curl=elbow_flexion + goblet=squat) → dispara",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "giant_set",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "curl_dumbbell",
+            "reps": 10
+          },
+          {
+            "exercise": "goblet_squat",
+            "reps": 10
+          }
+        ],
+        "intent_declared": "hypertrophy",
+        "params": {},
+        "_touched": {}
+      },
+      "expect_contains": [
+        "giant_set_target_muscle_group_inconsistent"
+      ]
+    },
+    {
+      "id": "p55a_giant_set_load_increasing",
+      "note": "P5.5a FI — giant_set percent_1rm homogéneo con cargas ASCENDENTES (60/70/80) → no decreciente → dispara; mismo patrón (3 curls) NO dispara el de muscle_group",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "giant_set",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "curl_dumbbell",
+            "reps": 10,
+            "load_metric": "percent_1rm",
+            "load_pct_1rm": 60
+          },
+          {
+            "exercise": "barbell_curl",
+            "reps": 10,
+            "load_metric": "percent_1rm",
+            "load_pct_1rm": 70
+          },
+          {
+            "exercise": "cable_curl",
+            "reps": 10,
+            "load_metric": "percent_1rm",
+            "load_pct_1rm": 80
+          }
+        ],
+        "intent_declared": "hypertrophy",
+        "params": {},
+        "_touched": {}
+      },
+      "expect_contains": [
+        "giant_set_load_progression_unusual"
+      ],
+      "expect_absent": [
+        "giant_set_target_muscle_group_inconsistent"
+      ]
+    },
+    {
+      "id": "p55a_pha_segment_undeclared",
+      "note": "P5.5a FI — PHA con un componente sin ejercicio en catálogo → catalog(c).segment==null → dispara (structural_hard)",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "peripheral_heart_action",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "goblet_squat",
+            "reps": 12
+          },
+          {
+            "exercise": null,
+            "reps": 12
+          }
+        ],
+        "intent_declared": "conditioning",
+        "params": {},
+        "_touched": {}
+      },
+      "expect_contains": [
+        "pha_body_segments_undeclared"
+      ]
+    },
+    {
+      "id": "p55a_giant_set_clean_descending",
+      "note": "P5.5a guarda — giant_set mismo patrón (3 curls) + cargas DESCENDENTES homogéneas → ninguna de las 2 reglas dispara",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "giant_set",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "curl_dumbbell",
+            "reps": 10,
+            "load_metric": "percent_1rm",
+            "load_pct_1rm": 80
+          },
+          {
+            "exercise": "barbell_curl",
+            "reps": 10,
+            "load_metric": "percent_1rm",
+            "load_pct_1rm": 70
+          },
+          {
+            "exercise": "cable_curl",
+            "reps": 12,
+            "load_metric": "percent_1rm",
+            "load_pct_1rm": 60
+          }
+        ],
+        "intent_declared": "hypertrophy",
+        "params": {},
+        "_touched": {}
+      },
+      "expect_absent": [
+        "giant_set_target_muscle_group_inconsistent",
+        "giant_set_load_progression_unusual"
+      ]
+    },
+    {
+      "id": "p55a_giant_set_load_heterogeneous_metric",
+      "note": "P5.5a guarda — giant_set con load_metric MIXTO (percent_1rm + absolute_load) y cargas ascendentes → guard de homogeneidad bloquea (fidelidad partial documentada)",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "giant_set",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "curl_dumbbell",
+            "reps": 10,
+            "load_metric": "percent_1rm",
+            "load_pct_1rm": 60
+          },
+          {
+            "exercise": "barbell_curl",
+            "reps": 10,
+            "load_metric": "absolute_load",
+            "load_value": 40
+          }
+        ],
+        "intent_declared": "hypertrophy",
+        "params": {},
+        "_touched": {}
+      },
+      "expect_absent": [
+        "giant_set_load_progression_unusual"
+      ]
+    },
+    {
+      "id": "p55b_strict_violation",
+      "note": "P5.5b FI — strict_upper_lower con 2 componentes upper consecutivos → dispara",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "peripheral_heart_action",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "push_up",
+            "reps": 12
+          },
+          {
+            "exercise": "curl_dumbbell",
+            "reps": 12
+          }
+        ],
+        "intent_declared": "conditioning",
+        "params": {
+          "alternation_pattern": "strict_upper_lower"
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "pha_alternation_pattern_violated"
+      ]
+    },
+    {
+      "id": "p55b_ppl_violation",
+      "note": "P5.5b FI — push_pull_lower: pos0 push ok, pos1 esperado pull pero goblet=lower → dispara",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "peripheral_heart_action",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "push_up",
+            "reps": 12
+          },
+          {
+            "exercise": "goblet_squat",
+            "reps": 12
+          }
+        ],
+        "intent_declared": "conditioning",
+        "params": {
+          "alternation_pattern": "push_pull_lower"
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "pha_alternation_pattern_violated"
+      ]
+    },
+    {
+      "id": "p55b_custom_exempt",
+      "note": "P5.5b guarda — custom EXENTO: misma secuencia que violaría strict, pero no dispara",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "peripheral_heart_action",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "push_up",
+            "reps": 12
+          },
+          {
+            "exercise": "curl_dumbbell",
+            "reps": 12
+          }
+        ],
+        "intent_declared": "conditioning",
+        "params": {
+          "alternation_pattern": "custom"
+        },
+        "_touched": {}
+      },
+      "expect_absent": [
+        "pha_alternation_pattern_violated"
+      ]
+    },
+    {
+      "id": "p55b_strict_clean",
+      "note": "P5.5b guarda — strict_upper_lower con alternancia correcta (upper/lower) → no dispara",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "peripheral_heart_action",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "push_up",
+            "reps": 12
+          },
+          {
+            "exercise": "goblet_squat",
+            "reps": 12
+          }
+        ],
+        "intent_declared": "conditioning",
+        "params": {
+          "alternation_pattern": "strict_upper_lower"
+        },
+        "_touched": {}
+      },
+      "expect_absent": [
+        "pha_alternation_pattern_violated"
+      ]
+    },
+    {
+      "id": "p55b_ppl_clean",
+      "note": "P5.5b guarda — push_pull_lower correcto (push/pull/lower) → no dispara",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "peripheral_heart_action",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "push_up",
+            "reps": 12
+          },
+          {
+            "exercise": "barbell_row",
+            "reps": 12
+          },
+          {
+            "exercise": "goblet_squat",
+            "reps": 12
+          }
+        ],
+        "intent_declared": "conditioning",
+        "params": {
+          "alternation_pattern": "push_pull_lower"
+        },
+        "_touched": {}
+      },
+      "expect_absent": [
+        "pha_alternation_pattern_violated"
+      ]
+    },
+    {
+      "id": "p55c_no_coherent_zone_fire",
+      "note": "P5.5c FI — straight/default reps=25 @92% (max zone score ~0.60<0.70) → no_coherent_zone",
+      "block": {
+        "id": "t",
+        "method": "straight",
+        "variant": "default",
+        "exercise": "back_squat",
+        "components": [],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "reps_target": 25,
+          "load_pct_1rm": 92,
+          "sets": 3
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "no_coherent_zone"
+      ]
+    },
+    {
+      "id": "p55c_no_coherent_zone_clean",
+      "note": "P5.5c guarda — reps=5 @85% → Z3 coherente → no dispara",
+      "block": {
+        "id": "t",
+        "method": "straight",
+        "variant": "default",
+        "exercise": "back_squat",
+        "components": [],
+        "intent_declared": "strength",
+        "params": {
+          "reps_target": 5,
+          "load_pct_1rm": 85,
+          "sets": 3
+        },
+        "_touched": {}
+      },
+      "expect_absent": [
+        "no_coherent_zone"
+      ]
+    },
+    {
+      "id": "p55c_zone_spread_fire",
+      "note": "P5.5c FI — giant_set 3 comps inferidos Z1/Z3/Z5 → spread=3>2 → dispara",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "giant_set",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "curl_dumbbell",
+            "reps": 2,
+            "load_metric": "percent_1rm",
+            "load_pct_1rm": 95
+          },
+          {
+            "exercise": "barbell_curl",
+            "reps": 6,
+            "load_metric": "percent_1rm",
+            "load_pct_1rm": 78
+          },
+          {
+            "exercise": "cable_curl",
+            "reps": 15,
+            "load_metric": "percent_1rm",
+            "load_pct_1rm": 60
+          }
+        ],
+        "intent_declared": "hypertrophy",
+        "params": {},
+        "_touched": {}
+      },
+      "expect_contains": [
+        "complex_zone_spread_excessive"
+      ]
+    },
+    {
+      "id": "p55c_zone_spread_boundary_clean",
+      "note": "P5.5c guarda frontera — 2 zonas distintas (Z1,Z5) → no >2 → no dispara",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "giant_set",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "curl_dumbbell",
+            "reps": 2,
+            "load_metric": "percent_1rm",
+            "load_pct_1rm": 95
+          },
+          {
+            "exercise": "cable_curl",
+            "reps": 15,
+            "load_metric": "percent_1rm",
+            "load_pct_1rm": 60
+          }
+        ],
+        "intent_declared": "hypertrophy",
+        "params": {},
+        "_touched": {}
+      },
+      "expect_absent": [
+        "complex_zone_spread_excessive"
+      ]
+    },
+    {
+      "id": "p56_contrast_same_pattern_fire",
+      "note": "P5.6 FI — heavy_light segmentos distintos (lower+upper) → dispara",
+      "block": {
+        "id": "t",
+        "method": "contrast",
+        "variant": "heavy_light",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "back_squat",
+            "role": "heavy",
+            "reps": 3
+          },
+          {
+            "exercise": "push_up",
+            "role": "explosive",
+            "reps": 5
+          }
+        ],
+        "intent_declared": "power",
+        "params": {},
+        "_touched": {}
+      },
+      "expect_contains": [
+        "contrast_components_same_pattern_violated"
+      ]
+    },
+    {
+      "id": "p56_contrast_same_pattern_clean",
+      "note": "P5.6 guarda — heavy_light mismo segmento (ambos lower) → no dispara",
+      "block": {
+        "id": "t",
+        "method": "contrast",
+        "variant": "heavy_light",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "deadlift_conventional",
+            "role": "heavy",
+            "reps": 3
+          },
+          {
+            "exercise": "box_jump",
+            "role": "explosive",
+            "reps": 4
+          }
+        ],
+        "intent_declared": "power",
+        "params": {},
+        "_touched": {}
+      },
+      "expect_absent": [
+        "contrast_components_same_pattern_violated"
+      ]
+    },
+    {
+      "id": "p56_fc_roles_order_fire",
+      "note": "P5.6 FI — french_contrast roles 0/1 intercambiados → fc_roles_wrong=1 → dispara",
+      "block": {
+        "id": "t",
+        "method": "contrast",
+        "variant": "french_contrast",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "box_jump",
+            "role": "heavy_plyo",
+            "reps": 4
+          },
+          {
+            "exercise": "back_squat",
+            "role": "heavy_strength",
+            "reps": 3
+          },
+          {
+            "exercise": "push_press",
+            "role": "loaded_explosive",
+            "reps": 4
+          },
+          {
+            "exercise": "power_clean",
+            "role": "unloaded_plyo",
+            "reps": 3
+          }
+        ],
+        "intent_declared": "power",
+        "params": {},
+        "_touched": {}
+      },
+      "expect_contains": [
+        "french_contrast_roles_order_wrong"
+      ]
+    },
+    {
+      "id": "p57_slc_independent_loads_fire",
+      "note": "P5.7 FI — olympic_complex con cargas por-componente distintas (70 vs 80) → dispara",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "olympic_complex",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "power_clean",
+            "reps": 3,
+            "load_metric": "percent_1rm",
+            "load_pct_1rm": 70
+          },
+          {
+            "exercise": "push_jerk",
+            "reps": 3,
+            "load_metric": "percent_1rm",
+            "load_pct_1rm": 80
+          }
+        ],
+        "intent_declared": "power",
+        "params": {},
+        "_touched": {}
+      },
+      "expect_contains": [
+        "slc_components_have_independent_loads"
+      ]
+    },
+    {
+      "id": "p57_slc_rest_too_long_fire",
+      "note": "P5.7 FI — olympic_complex rest_between_components_sec=20 (>10) → dispara",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "olympic_complex",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "power_clean",
+            "reps": 3
+          },
+          {
+            "exercise": "push_jerk",
+            "reps": 3
+          }
+        ],
+        "intent_declared": "power",
+        "params": {
+          "rest_between_components_sec": 20
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "slc_rest_between_components_too_long"
+      ]
+    },
+    {
+      "id": "p57_slc_order_unsafe_fire",
+      "note": "P5.7 FI — olympic first TCI 2 (burpee) < avg_rest 7 (power_clean) -2 → dispara",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "olympic_complex",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "burpee",
+            "reps": 3
+          },
+          {
+            "exercise": "power_clean",
+            "reps": 3
+          }
+        ],
+        "intent_declared": "power",
+        "params": {},
+        "_touched": {}
+      },
+      "expect_contains": [
+        "slc_component_order_technically_unsafe"
+      ]
+    },
+    {
+      "id": "p57_slc_order_unsafe_clean",
+      "note": "P5.7 guarda — olympic first 7 (power_clean), rest 6 (push_jerk); 7<4 falso → no dispara",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "olympic_complex",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "power_clean",
+            "reps": 3
+          },
+          {
+            "exercise": "push_jerk",
+            "reps": 3
+          }
+        ],
+        "intent_declared": "power",
+        "params": {},
+        "_touched": {}
+      },
+      "expect_absent": [
+        "slc_component_order_technically_unsafe"
+      ]
+    },
+    {
+      "id": "p57_tcc_too_light_fire",
+      "note": "P5.7 FI — time_capped_circuit componentes muy ligeros → rondas estimadas >15 → dispara",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "time_capped_circuit",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "burpee",
+            "reps": 3
+          },
+          {
+            "exercise": "wall_ball",
+            "reps": 3
+          }
+        ],
+        "intent_declared": "conditioning",
+        "params": {
+          "time_cap_min": 20
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "tcc_components_too_light"
+      ]
+    },
+    {
+      "id": "p58_slc_load_exceeds_weakest_fire",
+      "note": "P5.8 FI — olympic_complex shared_load 90% del weakest (>85) → dispara",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "olympic_complex",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "power_clean",
+            "reps": 3
+          },
+          {
+            "exercise": "push_jerk",
+            "reps": 3
+          }
+        ],
+        "intent_declared": "power",
+        "params": {
+          "shared_load_pct_1rm_of_weakest": 90
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "slc_load_exceeds_weakest_link"
+      ]
+    },
+    {
+      "id": "p58_slc_load_exceeds_weakest_clean",
+      "note": "P5.8 guarda — shared_load 65% (default, <=85) → no dispara",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "olympic_complex",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "power_clean",
+            "reps": 3
+          },
+          {
+            "exercise": "push_jerk",
+            "reps": 3
+          }
+        ],
+        "intent_declared": "power",
+        "params": {
+          "shared_load_pct_1rm_of_weakest": 65
+        },
+        "_touched": {}
+      },
+      "expect_absent": [
+        "slc_load_exceeds_weakest_link"
+      ]
+    },
+    {
+      "id": "p61_family_mismatch_fire",
+      "note": "P6.1 FI — olympic_complex (single_load_chain) con family declarada 'circuit' → dispara",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "olympic_complex",
+        "exercise": null,
+        "family": "circuit",
+        "components": [
+          {
+            "exercise": "power_clean",
+            "reps": 3
+          },
+          {
+            "exercise": "push_jerk",
+            "reps": 3
+          }
+        ],
+        "intent_declared": "power",
+        "params": {},
+        "_touched": {}
+      },
+      "expect_contains": [
+        "complex_family_mismatch_with_variant"
+      ]
+    },
+    {
+      "id": "p61_family_match_clean",
+      "note": "P6.1 guarda — family correcta (single_load_chain) → no dispara",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "olympic_complex",
+        "exercise": null,
+        "family": "single_load_chain",
+        "components": [
+          {
+            "exercise": "power_clean",
+            "reps": 3
+          },
+          {
+            "exercise": "push_jerk",
+            "reps": 3
+          }
+        ],
+        "intent_declared": "power",
+        "params": {},
+        "_touched": {}
+      },
+      "expect_absent": [
+        "complex_family_mismatch_with_variant"
+      ]
+    },
+    {
+      "id": "p61_zone_inconsistent_fire",
+      "note": "P6.1 FI — straight zone declarada Z1 pero reps=10@70% infiere Z4 → dispara",
+      "block": {
+        "id": "t",
+        "method": "straight",
+        "variant": "default",
+        "exercise": "back_squat",
+        "zone": "Z1",
+        "components": [],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "reps_target": 10,
+          "load_pct_1rm": 70,
+          "sets": 3
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "zone_declared_inconsistent_with_inferred"
+      ]
+    },
+    {
+      "id": "p61_zone_consistent_clean",
+      "note": "P6.1 guarda — zone declarada Z4 coincide con inferida (reps=10@70%) → no dispara",
+      "block": {
+        "id": "t",
+        "method": "straight",
+        "variant": "default",
+        "exercise": "back_squat",
+        "zone": "Z4",
+        "components": [],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "reps_target": 10,
+          "load_pct_1rm": 70,
+          "sets": 3
+        },
+        "_touched": {}
+      },
+      "expect_absent": [
+        "zone_declared_inconsistent_with_inferred"
+      ]
+    },
+    {
+      "id": "p62_tabata_load_high_fire",
+      "note": "P6.2 FI — tabata con componente a 70% 1RM (>50) → dispara",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "tabata",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "wall_ball",
+            "reps": 10,
+            "load_metric": "percent_1rm",
+            "load_pct_1rm": 70
+          }
+        ],
+        "intent_declared": "conditioning",
+        "params": {},
+        "_touched": {}
+      },
+      "expect_contains": [
+        "tabata_load_too_high_for_duration"
+      ]
+    },
+    {
+      "id": "p62_tabata_load_ok_clean",
+      "note": "P6.2 guarda — tabata a 40% (<=50) → no dispara",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "tabata",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "wall_ball",
+            "reps": 10,
+            "load_metric": "percent_1rm",
+            "load_pct_1rm": 40
+          }
+        ],
+        "intent_declared": "conditioning",
+        "params": {},
+        "_touched": {}
+      },
+      "expect_absent": [
+        "tabata_load_too_high_for_duration"
+      ]
+    },
+    {
+      "id": "p63_mep_exercises_inconsistent_fire",
+      "note": "P6.3 FI — multi_exercise_pyramid con ejercicios distintos entre rondas → dispara",
+      "block": {
+        "id": "t",
+        "method": "pyramid",
+        "variant": "multi_exercise_pyramid",
+        "exercise": null,
+        "round_exercises": [
+          [
+            "back_squat",
+            "bench_press_barbell"
+          ],
+          [
+            "back_squat",
+            "overhead_press"
+          ]
+        ],
+        "components": [
+          {
+            "exercise": "back_squat",
+            "reps": 5
+          }
+        ],
+        "intent_declared": "strength",
+        "params": {},
+        "_touched": {}
+      },
+      "expect_contains": [
+        "mep_exercises_inconsistent_across_rounds"
+      ]
+    },
+    {
+      "id": "p63_mep_exercises_consistent_clean",
+      "note": "P6.3 guarda — mismos ejercicios cada ronda → no dispara",
+      "block": {
+        "id": "t",
+        "method": "pyramid",
+        "variant": "multi_exercise_pyramid",
+        "exercise": null,
+        "round_exercises": [
+          [
+            "back_squat",
+            "bench_press_barbell"
+          ],
+          [
+            "bench_press_barbell",
+            "back_squat"
+          ]
+        ],
+        "components": [
+          {
+            "exercise": "back_squat",
+            "reps": 5
+          }
+        ],
+        "intent_declared": "strength",
+        "params": {},
+        "_touched": {}
+      },
+      "expect_absent": [
+        "mep_exercises_inconsistent_across_rounds"
+      ]
+    },
+    {
+      "id": "p74_misidentified_fire",
+      "note": "P7.4 FI — ancla declarada back_squat pero weakest computado=front_squat (conf high) → misidentified",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "olympic_complex",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "back_squat",
+            "reps": 3
+          },
+          {
+            "exercise": "front_squat",
+            "reps": 3
+          }
+        ],
+        "intent_declared": "power",
+        "params": {
+          "weakest_link_ref": "back_squat"
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "slc_weakest_link_misidentified"
+      ]
+    },
+    {
+      "id": "p74_misidentified_clean",
+      "note": "P7.4 guarda — ancla front_squat = weakest computado (conf high) → no dispara",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "olympic_complex",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "back_squat",
+            "reps": 3
+          },
+          {
+            "exercise": "front_squat",
+            "reps": 3
+          }
+        ],
+        "intent_declared": "power",
+        "params": {
+          "weakest_link_ref": "front_squat"
+        },
+        "_touched": {}
+      },
+      "expect_absent": [
+        "slc_weakest_link_misidentified"
+      ]
+    },
+    {
+      "id": "p74_lowconf_imprecise_fire",
+      "note": "P7.4 FI — power_clean+push_jerk cruza 2 hubs → low_confidence + ratio_imprecise; misidentified SE SALTA por baja confianza",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "olympic_complex",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "power_clean",
+            "reps": 3
+          },
+          {
+            "exercise": "push_jerk",
+            "reps": 3
+          }
+        ],
+        "intent_declared": "power",
+        "params": {
+          "weakest_link_ref": "power_clean"
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "slc_weakest_link_low_confidence",
+        "ratio_composition_possibly_imprecise"
+      ],
+      "expect_absent": [
+        "slc_weakest_link_misidentified"
+      ]
+    },
+    {
+      "id": "p74_no_anchor_clean",
+      "note": "P7.4 guarda — sin ancla declarada (fixture default) → motor dormido, ninguno dispara",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "olympic_complex",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "power_clean",
+            "reps": 3
+          },
+          {
+            "exercise": "push_jerk",
+            "reps": 3
+          }
+        ],
+        "intent_declared": "power",
+        "params": {},
+        "_touched": {}
+      },
+      "expect_absent": [
+        "slc_weakest_link_misidentified",
+        "slc_weakest_link_low_confidence",
+        "ratio_composition_possibly_imprecise"
+      ]
+    },
+    {
+      "id": "v361_slc_resembles_contrast_fire",
+      "note": "V3.6.1 — SLC con 2 componentes + rest 15s ya no es cadena: parece contrast/heavy_light. Dispara slc_resembles_contrast_heavy_light (informational, no bloquea).",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "olympic_complex",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "power_clean",
+            "reps": 3
+          },
+          {
+            "exercise": "push_jerk",
+            "reps": 3
+          }
+        ],
+        "intent_declared": "power",
+        "params": {
+          "rest_between_components_sec": 18,
+          "shared_load_pct_1rm_of_weakest": 70
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "slc_resembles_contrast_heavy_light"
+      ]
+    },
+    {
+      "id": "v361_slc_three_comps_clean",
+      "note": "V3.6.1 guarda — SLC canónico (3 comps homogéneos + rest 2s) NO parece contrast.",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "olympic_complex",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "power_clean",
+            "reps": 3
+          },
+          {
+            "exercise": "front_squat",
+            "reps": 3
+          },
+          {
+            "exercise": "push_press",
+            "reps": 3
+          }
+        ],
+        "intent_declared": "power",
+        "params": {
+          "rest_between_components_sec": 2,
+          "shared_load_pct_1rm_of_weakest": 70
+        },
+        "_touched": {}
+      },
+      "expect_absent": [
+        "slc_resembles_contrast_heavy_light"
+      ]
+    },
+    {
+      "id": "v362_superset_resembles_contrast_fire",
+      "note": "V3.6.2 — superset push_h con cargas heavy(85)/light(50) + rest 90s (ventana PAP) parece par de contraste. Dispara superset_resembles_contrast_heavy_light.",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "superset",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "bench_press_barbell",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 5,
+            "load_metric": "percent_1rm",
+            "load_pct_1rm": 85
+          },
+          {
+            "exercise": "bench_press_dumbbell",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 5,
+            "load_metric": "percent_1rm",
+            "load_pct_1rm": 50
+          }
+        ],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "rest_between_components_sec": 90
+        },
+        "_touched": {}
+      },
+      "expect_contains": [
+        "superset_resembles_contrast_heavy_light"
+      ]
+    },
+    {
+      "id": "v362_superset_balanced_clean",
+      "note": "V3.6.2 guarda — superset real (cargas parejas hipertróficas 70/70 + rest corto 30s) NO parece contraste.",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "superset",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "bench_press_barbell",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 10,
+            "load_metric": "percent_1rm",
+            "load_pct_1rm": 70
+          },
+          {
+            "exercise": "bench_press_dumbbell",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 10,
+            "load_metric": "percent_1rm",
+            "load_pct_1rm": 70
+          }
+        ],
+        "intent_declared": "hypertrophy",
+        "params": {
+          "rest_between_components_sec": 30
+        },
+        "_touched": {}
+      },
+      "expect_absent": [
+        "superset_resembles_contrast_heavy_light"
+      ]
+    },
+    {
+      "id": "v363_complex_resembles_fc_fire",
+      "note": "V3.6.3 — complex con 4 componentes en roles canónicos de french_contrast = french_contrast mal etiquetado (es variante de contrast). Dispara complex_resembles_french_contrast.",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "olympic_complex",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "back_squat",
+            "role": "heavy_strength",
+            "work_metric": "reps",
+            "work_value": 3
+          },
+          {
+            "exercise": "box_jump",
+            "role": "heavy_plyo",
+            "work_metric": "reps",
+            "work_value": 3
+          },
+          {
+            "exercise": "push_press",
+            "role": "loaded_explosive",
+            "work_metric": "reps",
+            "work_value": 3
+          },
+          {
+            "exercise": "power_clean",
+            "role": "unloaded_plyo",
+            "work_metric": "reps",
+            "work_value": 3
+          }
+        ],
+        "intent_declared": "power",
+        "params": {},
+        "_touched": {}
+      },
+      "expect_contains": [
+        "complex_resembles_french_contrast"
+      ]
+    },
+    {
+      "id": "v363_complex_three_comps_clean",
+      "note": "V3.6.3 guarda — complex con 3 componentes (no 4 roles fc) NO parece french_contrast.",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "olympic_complex",
+        "exercise": null,
+        "components": [
+          {
+            "exercise": "power_clean",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 3
+          },
+          {
+            "exercise": "front_squat",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 3
+          },
+          {
+            "exercise": "push_press",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 3
+          }
+        ],
+        "intent_declared": "power",
+        "params": {
+          "shared_load_pct_1rm_of_weakest": 70,
+          "rest_between_components_sec": 2
+        },
+        "_touched": {}
+      },
+      "expect_absent": [
+        "complex_resembles_french_contrast"
+      ]
+    },
+    {
+      "id": "v364_misclassified_slc_as_ilc_fire",
+      "note": "V3.6.4 — olympic_complex declarado single_load_chain pero con %1RM propio por componente y sin carga compartida = firma de independent_load_chain. Dispara complex_likely_misclassified_as_family (argmax difuso).",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "olympic_complex",
+        "exercise": null,
+        "family": "single_load_chain",
+        "components": [
+          {
+            "exercise": "power_clean",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 3,
+            "load_metric": "percent_1rm",
+            "load_pct_1rm": 80
+          },
+          {
+            "exercise": "front_squat",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 5,
+            "load_metric": "percent_1rm",
+            "load_pct_1rm": 75
+          },
+          {
+            "exercise": "push_press",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 5,
+            "load_metric": "percent_1rm",
+            "load_pct_1rm": 70
+          }
+        ],
+        "intent_declared": "power",
+        "params": {},
+        "_touched": {}
+      },
+      "expect_contains": [
+        "complex_likely_misclassified_as_family"
+      ]
+    },
+    {
+      "id": "v364_slc_correct_clean",
+      "note": "V3.6.4 guarda — single_load_chain correcto (carga compartida + comps sin carga propia) NO se marca como mal clasificado.",
+      "block": {
+        "id": "t",
+        "method": "complex",
+        "variant": "olympic_complex",
+        "exercise": null,
+        "family": "single_load_chain",
+        "components": [
+          {
+            "exercise": "power_clean",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 3,
+            "load_metric": "none",
+            "load_pct_1rm": null
+          },
+          {
+            "exercise": "front_squat",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 3,
+            "load_metric": "none",
+            "load_pct_1rm": null
+          },
+          {
+            "exercise": "push_press",
+            "role": "",
+            "work_metric": "reps",
+            "work_value": 3,
+            "load_metric": "none",
+            "load_pct_1rm": null
+          }
+        ],
+        "intent_declared": "power",
+        "params": {
+          "shared_load_pct_1rm_of_weakest": 70,
+          "rest_between_components_sec": 2
+        },
+        "_touched": {}
+      },
+      "expect_absent": [
+        "complex_likely_misclassified_as_family"
+      ]
+    }
+  ]
+}

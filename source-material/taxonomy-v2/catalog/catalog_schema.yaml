@@ -1,0 +1,323 @@
+# =============================================================================
+# Exercise Catalog Schema — Training Taxonomy v2, Layer B
+# =============================================================================
+# Formal schema for the exercise catalog. Consolidates decisions B.0-B.6.
+# Data lives in catalog_seed_part1.yaml / catalog_seed_part2.yaml.
+# Integrity validation: validate_catalog.py (implements P1-P3, R1-R4).
+# =============================================================================
+
+version: "1.0"
+layer: "B"
+parent: "taxonomy_v2"
+
+# =============================================================================
+# SECTION 1 — ENTITY MODEL (B.0)
+# =============================================================================
+# Two-level hierarchy: exercise (base) + variation (delta).
+# Cut rule: changes movement pattern OR primary implement → new base;
+# modulates execution (tempo, ROM, grip, stance, surface, assistance,
+# load_position, bar_type, leverage) → variation.
+# Special cases decided: pull_up vs chin_up = separate bases;
+# trap_bar/SSB = variations (bar_type dimension), marked for eventual
+# promotion to implements if strength_ratios justify it.
+
+exercise:
+  fields:
+    # Identity
+    id: { type: string, required: true, immutable: true, format: snake_case }
+    name: { type: string, required: true }
+    name_es: { type: "string | null" }
+    aliases: { type: "[string]", default: [] }
+
+    # Biomechanical classification
+    movement_pattern: { type: enum, ref: movement_pattern_enum, required: true }
+    body_segment: { type: enum, values: [upper, lower, core, full], required: true }
+    primary_muscles: { type: "[enum]", ref: muscle_group_enum, required: true }
+    secondary_muscles: { type: "[enum]", ref: muscle_group_enum, default: [] }
+    muscle_contribution_override:
+      type: "map<muscle_group, float> | null"
+      notes: >
+        Optional per-muscle contribution weights. Defaults when absent:
+        primary = 1.0, secondary = 0.5 (fractional volume counting).
+        MARKED: consumed by Layer C/D accumulated-volume engine.
+    kinetic_chain: { type: enum, values: [open, closed], required: true }
+    laterality_default:
+      type: enum
+      values: [bilateral, unilateral_alt, unilateral_one_side]
+      required: true
+    joint_actions: { type: "[string]", default: [] }
+
+    # Implement and load
+    implement: { type: enum, ref: implement_enum, required: true }
+    load_metric_primary:
+      type: enum
+      values: [percent_1rm, absolute_load, bodyweight_ratio, time, distance, none]
+      required: true
+    load_metrics_supported: { type: "[enum]", required: true }
+    is_loadable_external: { type: boolean, default: true }
+
+    # Objective indices (B.3 — ordinal, anchor-calibrated)
+    mechanical_demand_index:
+      type: number
+      range: [0, 10]
+      required: true
+      semantics: >
+        ORDINAL scale. For bodyweight: strength required relative to BW
+        for 1 strict rep (fine-grained, anchors the graph). For loaded:
+        structural demand of the pattern itself (coarse; strength_ratios
+        carry fine-grained relations between loaded exercises).
+        Strongly comparable within a pattern family; weakly across.
+    technical_complexity_index:
+      type: number
+      range: [0, 10]
+      required: true
+      semantics: >
+        Practice required for a beginner to reach acceptable, safe
+        technique. Globally comparable (measures learning, not strength).
+        Block-level override allowed (per A.8.4 decision).
+    typical_time_per_rep_sec: { type: number, required: true }
+    is_anchor:
+      type: boolean
+      default: false
+      notes: "Anchors are immutable without full catalog version bump (R3)."
+
+    # Compatibilities
+    parallel_category:
+      type: "enum | null"
+      values: [ballistic, plyometric, olympic, dynamic_effort]
+    methods_compatible: { type: "[enum] | null", notes: "null = all methods" }
+    zones_typical: { type: "[enum] | null" }
+
+    # Relations (the graph — B.2)
+    progressions: { type: "[progression_edge]", default: [] }
+    # regressions: DERIVED automatically at load time (never declared)
+    equivalences: { type: "[equivalence_edge]", default: [] }
+    strength_ratio_vs: { type: "[strength_ratio]", default: [] }
+
+    # Variations
+    variations: { type: "[variation]", default: [] }
+
+    # Metadata
+    tags: { type: "[string]", default: [] }
+    notes: { type: "string | null" }
+
+variation:
+  fields:
+    id: { type: string, required: true, format: snake_case }
+    name: { type: string, required: true }
+    modifies:
+      type: "[enum]"
+      values: [tempo, rom, grip, stance, surface, assistance,
+               load_position, bar_type, angle, leverage]
+      required: true
+      notes: >
+        Variations sharing a dimension within the same base form an
+        IMPLICIT LADDER ordered by mechanical_demand_delta (B.0.8).
+        Orthogonal dimensions do NOT auto-connect.
+    mechanical_demand_delta: { type: number, range: [-3, 3], required: true }
+    technical_complexity_delta: { type: number, range: [-3, 3], required: true }
+    notes: { type: "string | null" }
+
+# =============================================================================
+# SECTION 2 — RELATION OBJECTS (B.2, B.4)
+# =============================================================================
+
+progression_edge:
+  fields:
+    target:
+      type: exercise_node          # { exercise: id, variation: id | null }
+      required: true
+      notes: "Nodes are resolvable pairs; edges connect any combination."
+    mechanism:
+      type: enum
+      values: [load, leverage, angle, assistance, range_of_motion,
+               stability, complexity, tempo]
+      required: true
+      cardinality: single_dominant
+      notes: >
+        One dominant mechanism per edge. Secondary mechanisms go in notes
+        and raise catalog_edge_mechanism_possibly_mixed (audit flag) for
+        eventual migration to array if mixed cases become frequent.
+    magnitude:
+      type: enum
+      values: [small, medium, large]
+      required: true
+      semantics:
+        small: "acquirable in 1-3 weeks at level"
+        medium: "1-2 months"
+        large: "months+; usually needs intermediate nodes"
+      notes: "Consumed directly by v3 generator for bodyweight progression."
+    notes: { type: "string | null" }
+
+equivalence_edge:
+  fields:
+    target: { type: exercise_node, required: true }
+    similarity: { type: enum, values: [high, medium], required: true }
+    load_translation:
+      type: "number | null"
+      notes: "e.g. 0.40 = per-dumbbell load ≈ 40% of barbell total"
+    notes: { type: "string | null" }
+  properties:
+    symmetric: true                # declared once; both directions derived
+    transitive: false              # navigation limited to distance 1
+  purpose: "v3 substitution engine (equipment availability)."
+
+strength_ratio:
+  fields:
+    reference: { type: exercise_id, required: true }
+    expected_ratio: { type: number, required: true }
+    confidence: { type: enum, values: [high, medium, low], required: true }
+  model: >
+    Hub model (B.4): each exercise declares ratio vs its family hub;
+    inter_hub_ratios connect hubs; cross-family comparison composes
+    transitively with confidence degradation (min of chain, -1 level
+    per inter-hub jump; 2+ jumps → low).
+  validation_mode: >
+    WITHOUT athlete profile: RELATIVE only (correct weakest-link
+    anchoring). This is the PRIMARY mode for templates and program
+    starts. WITH profile (future): absolute mode via
+    1RM_est = 1RM_known(ref) × composed_ratio.
+
+strength_hubs:
+  lower_squat: back_squat
+  lower_hinge: deadlift_conventional
+  upper_push_h: bench_press_barbell
+  upper_push_v: overhead_press
+  upper_pull_v: pull_up
+  upper_pull_h: barbell_row
+  olympic: power_clean
+  global_hub: back_squat
+
+# =============================================================================
+# SECTION 3 — CLOSED ENUMS (B.1)
+# =============================================================================
+
+movement_pattern_enum:
+  compound: [squat, hinge, lunge, push_h, push_v, pull_h, pull_v, carry, rotation]
+  anti_patterns: [anti_rotation, anti_extension, anti_lateral_flexion]
+  isolation: [knee_extension, knee_flexion, elbow_extension, elbow_flexion,
+              hip_abduction, hip_adduction, calf_raise]
+  ballistic_locomotor: [olympic_pull, jump, throw, locomotion]
+  total: 23
+  cross_validation: >
+    Each pattern carries typical_segment metadata; mismatch with declared
+    body_segment raises exercise_pattern_segment_mismatch (informational).
+
+muscle_group_enum:
+  lower: [quadriceps, hamstrings, glutes, adductors, abductors, calves, hip_flexors]
+  upper_push: [pectorals, anterior_deltoid, lateral_deltoid, triceps]
+  upper_pull: [lats, upper_back, posterior_deltoid, biceps, forearms]
+  core_posterior: [abdominals, obliques, spinal_erectors, lower_back]
+  specialty: [neck, rotator_cuff]
+  total: 22
+  marked: >
+    Possible granularity expansion for muscle-group volume/damage tracking
+    (Layer C/D). Migration = catalog data re-declaration, not schema change.
+
+implement_enum:
+  values: [barbell, dumbbell, kettlebell, bodyweight, machine, cable,
+           band, sandbag, mace, club, sled, medicine_ball, plate,
+           erg_row, erg_ski, erg_bike, wall_ball, box, rope, rings,
+           parallettes, pull_up_bar]
+  notes: >
+    Special bars (trap_bar, SSB, safety_bar) are NOT implements — they are
+    variations (bar_type dimension). Marked for eventual promotion.
+
+antagonist_pairs:
+  pairs:
+    - { pair: [push_h, pull_h], confidence: canonical }
+    - { pair: [push_v, pull_v], confidence: canonical }
+    - { pair: [knee_extension, knee_flexion], confidence: canonical }
+    - { pair: [elbow_extension, elbow_flexion], confidence: canonical }
+    - { pair: [hip_abduction, hip_adduction], confidence: canonical }
+    - { pair: [squat, hinge], confidence: practical }
+    - { pair: [rotation, anti_rotation], confidence: weak }
+  validation_semantics: >
+    antagonist_giant_set accepts canonical/practical silently; weak raises
+    informational flag; unlisted pairs raise ags_pair_not_antagonistic.
+
+# =============================================================================
+# SECTION 4 — GRAPH SEMANTICS (B.2)
+# =============================================================================
+
+graph:
+  nodes: "(exercise_id, variation_id | null) — resolvable pairs"
+  effective_demand: "base.mechanical_demand_index + (variation.delta ?? 0)"
+  edge_sources:
+    - explicit progressions (declared in YAML)
+    - implicit intra-base ladders (same modifies dimension, ordered by delta)
+    - derived regressions (automatic inverses)
+    - edges_addenda (cross-file edges attached at load)
+  structural_properties:
+    P1: "∀ progression edge a→b: demand(b) > demand(a)"
+    P2: "Acyclic (DAG)"
+    P3: "All edge targets resolvable"
+    P4: "Connectivity NOT required (island exercises valid)"
+  load_time_behavior: "P1-P3 violations are HARD ERRORS — catalog does not load."
+
+# =============================================================================
+# SECTION 5 — INDEX CALIBRATION RULES (B.3)
+# =============================================================================
+
+index_rules:
+  R1: "indices ∈ [0,10]; variation deltas ∈ [-3,+3]"
+  R2: "effective demand (base + delta) ∈ [0,10]"
+  R3: "anchors immutable without full catalog version bump"
+  R4: "graph P1 acts as mutual consistency net between indices and edges"
+  ordinal_interpretation: >
+    Indices are ORDINAL, not interval. Top-range compression (advanced
+    calisthenics 8-10) is by design: acquisition cost lives in edge
+    magnitude + intermediate node density, not in numeric deltas.
+  marked_for_v3: >
+    Data-assisted recalibration: executed-state failure patterns on
+    specific transitions suggest gap recalibration or intermediate nodes.
+  marked_skill_tracks: >
+    Advanced calisthenics lines (planche, front lever, OAC, handstand)
+    need dense intermediate chains and v3 skill-track treatment
+    (mastery by hold time, slower progression cadence).
+
+# =============================================================================
+# SECTION 6 — CATALOG ERRORS (B.5.3 — separate category from block flags)
+# =============================================================================
+
+catalog_errors:
+  catalog_edge_demand_inverted: { rule: P1, blocking: true }
+  catalog_progression_cycle_detected: { rule: P2, blocking: true }
+  catalog_edge_target_missing: { rule: P3, blocking: true }
+  catalog_effective_demand_out_of_range: { rule: R2, blocking: true }
+  catalog_anchor_modified_without_version_bump: { rule: R3, blocking: true }
+  catalog_ratio_reference_missing: { rule: "B.4", blocking: true }
+  catalog_equivalence_asymmetry_conflict: { rule: "B.2.4", blocking: true }
+
+# =============================================================================
+# SECTION 7 — HOOK RESOLUTION MAP (B.5.1-B.5.2)
+# =============================================================================
+
+hooks_resolved_by_catalog:
+  fn:check_pair_movement_patterns_antagonistic: "antagonist_pairs lookup"
+  fn:check_giant_set_muscle_group_coherence: "primary_muscles intersection"
+  fn:components_share_same_implement: "implement comparison (bar_type variations = same)"
+  fn:check_slc_load_appropriate_for_components: "validate_slc_load (B.4.4) + load_metric/parallel checks"
+  fn:components_require_different_loads: "load_metric_primary divergence OR composed ratio > 2.0"
+
+hooks_upgraded_by_catalog:
+  fn:check_olympic_complex_technical_continuity: >
+    block override ?? catalog effective index ?? v2 heuristic fallback
+  fn:components_have_uniform_duration: >
+    typical_time_per_rep_sec ?? v2 heuristic fallback
+    (silently improves all Group 7 estimations)
+
+# =============================================================================
+# SECTION 8 — SEED CATALOG STATUS (B.6)
+# =============================================================================
+
+seed_status:
+  exercises: 98
+  variations: 102
+  total_nodes: 200
+  explicit_edges: 29
+  anchors: 20
+  equivalences: 13
+  strength_ratios: 19
+  integrity: "PASS (P1-P3, R1-R2) — validator verified by fault injection"
+  files: [catalog_seed_part1.yaml, catalog_seed_part2.yaml, validate_catalog.py]

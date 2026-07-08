@@ -1,0 +1,312 @@
+# =============================================================================
+# Template Examples — Training Taxonomy v2, Layer D (D.0.9 illustration)
+# =============================================================================
+# Two complete mesocycle_templates demonstrating the template model:
+#   T1: "Fuerza base 4+1"        — classic strength block, simple
+#   T2: "HYROX prep concurrente" — concurrent hybrid, interference-aware
+#
+# NOTE: these examples PREVIEW structures (slots, progression_scheme,
+# interference rules) that D.1-D.3 will formalize. Field names here are
+# the working proposal those steps will close.
+# All exercise refs verified against catalog_seed (98 exercises).
+# All method/variant refs verified against taxonomy_v2 (40 variants).
+# =============================================================================
+
+# =============================================================================
+# TEMPLATE 1 — "Fuerza base 4+1"
+# =============================================================================
+
+session_templates:
+
+  st_lower_heavy:
+    name: "Lower pesado"
+    blocks:
+      - method: straight
+        variant: default
+        exercise: { type: concrete, ref: back_squat }
+        params: { sets: 5, reps_target: 3, load_pct_1rm: 85, rir_target: 2,
+                  rest_inter_set_sec: 240 }
+        intent_declared: max_strength
+      - method: straight
+        variant: default
+        exercise: { type: concrete, ref: rdl_barbell }
+        params: { sets: 4, reps_target: 6, load_pct_1rm: 75, rir_target: 2,
+                  rest_inter_set_sec: 180 }
+        intent_declared: strength
+      - method: straight
+        variant: default
+        exercise:
+          type: placeholder
+          query: { movement_pattern: lunge, implement_in: [barbell, dumbbell] }
+          fallback_via: equivalences
+        params: { sets: 3, reps_target: 8, rir_target: 2, rest_inter_set_sec: 120 }
+        intent_declared: hypertrophy
+        volume_scaling: landmark_relative
+
+  st_upper_heavy:
+    name: "Upper pesado"
+    blocks:
+      - method: straight
+        variant: default
+        exercise: { type: concrete, ref: bench_press_barbell }
+        params: { sets: 5, reps_target: 3, load_pct_1rm: 85, rir_target: 2,
+                  rest_inter_set_sec: 240 }
+        intent_declared: max_strength
+      - method: straight
+        variant: default
+        exercise: { type: concrete, ref: pull_up }
+        params: { sets: 4, reps_target: 6, load_metric: bodyweight_plus,
+                  rir_target: 2, rest_inter_set_sec: 180 }
+        intent_declared: strength
+      - method: complex
+        variant: superset
+        family: independent_load_chain
+        intent_declared: hypertrophy
+        components:
+          - exercise: { type: placeholder,
+                        query: { movement_pattern: push_v, implement_in: [dumbbell, machine] } }
+            params: { reps_per_component: 10, rir_target: 2 }
+          - exercise: { type: placeholder,
+                        query: { movement_pattern: pull_h, implement_in: [cable, dumbbell] } }
+            params: { reps_per_component: 10, rir_target: 2 }
+        params: { total_rounds: 3, rest_intra_pair_sec: 30, rest_inter_round_sec: 90 }
+        volume_scaling: landmark_relative
+
+  st_full_volume:
+    name: "Full body volumen"
+    blocks:
+      - method: pyramid
+        variant: ascending
+        exercise: { type: concrete, ref: deadlift_conventional }
+        params: { sets_count: 4, first_set: { load_pct_1rm: 65, reps: 8 },
+                  peak_set: { load_pct_1rm: 82, reps: 4 }, rest_inter_set_sec: 210 }
+        intent_declared: strength
+      - method: straight
+        variant: default
+        exercise: { type: concrete, ref: overhead_press }
+        params: { sets: 4, reps_target: 8, load_pct_1rm: 70, rir_target: 2,
+                  rest_inter_set_sec: 150 }
+        intent_declared: hypertrophy
+      - method: complex
+        variant: antagonist_giant_set
+        family: independent_load_chain
+        intent_declared: hypertrophy
+        params: { total_rounds: 3, pairs_count: 2, rest_intra_pair_sec: 15,
+                  rest_inter_pair_sec: 60, rest_inter_round_sec: 120 }
+        components:
+          - { exercise: { type: concrete, ref: curl_dumbbell },
+              pair_index: 0, role_in_pair: agonist, reps_per_component: 10 }
+          - { exercise: { type: concrete, ref: triceps_pushdown },
+              pair_index: 0, role_in_pair: antagonist, reps_per_component: 10 }
+          - { exercise: { type: concrete, ref: leg_curl_lying },
+              pair_index: 1, role_in_pair: agonist, reps_per_component: 12 }
+          - { exercise: { type: concrete, ref: leg_extension },
+              pair_index: 1, role_in_pair: antagonist, reps_per_component: 12 }
+        volume_scaling: landmark_relative
+
+  st_hx_lower_strength:
+    name: "Lower fuerza (mantenimiento HYROX)"
+    blocks:
+      - method: cluster
+        variant: doubles_triples
+        exercise: { type: concrete, ref: back_squat }
+        params: { sets: 4, reps_per_cluster: 2, clusters_per_set: 3,
+                  load_pct_1rm: 85, rest_intra_set_sec: 25, rest_inter_set_sec: 210 }
+        intent_declared: max_strength
+        note: "cluster preserva calidad con volumen bajo: fuerza sin costo de recuperación"
+      - method: contrast
+        variant: heavy_light
+        intent_declared: power
+        components:
+          - { role: heavy, exercise: { type: concrete, ref: deadlift_conventional },
+              reps_per_rep: 3, load_pct_1rm: 80 }
+          - { role: explosive, exercise: { type: concrete, ref: box_jump },
+              reps_per_rep: 4 }
+        params: { pairs: 4, rest_intra_pair_sec: 90, rest_inter_pair_sec: 180 }
+      - method: straight
+        variant: default
+        exercise: { type: concrete, ref: leg_curl_lying }
+        params: { sets: 3, reps_target: 8, rir_target: 2, rest_inter_set_sec: 120 }
+        intent_declared: prehab
+        note: "isquios: protección para el volumen de carrera"
+
+  st_hx_upper_carry:
+    name: "Upper + carry"
+    blocks:
+      - method: straight
+        variant: default
+        exercise: { type: concrete, ref: bench_press_barbell }
+        params: { sets: 4, reps_target: 5, load_pct_1rm: 80, rir_target: 2,
+                  rest_inter_set_sec: 180 }
+        intent_declared: strength
+      - method: complex
+        variant: superset
+        family: independent_load_chain
+        intent_declared: strength
+        components:
+          - { exercise: { type: concrete, ref: pull_up }, reps_per_component: 6 }
+          - { exercise: { type: concrete, ref: shoulder_press_dumbbell }, reps_per_component: 8 }
+        params: { total_rounds: 4, rest_intra_pair_sec: 45, rest_inter_round_sec: 120 }
+      - method: emom
+        variant: alternating
+        intent_declared: conditioning
+        params: { interval_sec: 60, total_intervals: 12 }
+        components:
+          - { exercise: { type: concrete, ref: farmers_carry }, work: "40m" }
+          - { exercise: { type: concrete, ref: kb_swing_two_hand }, reps: 15 }
+
+  st_hx_stations:
+    name: "Estaciones HYROX"
+    blocks:
+      - method: complex
+        variant: fixed_round_circuit
+        family: circuit
+        intent_declared: conditioning
+        energy_system: lactic
+        params: { total_rounds: 4, rest_inter_round_sec: 120 }
+        components:
+          - { exercise: { type: concrete, ref: ski_erg }, work: "250m" }
+          - { exercise: { type: concrete, ref: sled_push }, work: "25m" }
+          - { exercise: { type: concrete, ref: burpee }, reps: 12 }
+          - { exercise: { type: concrete, ref: wall_ball }, reps: 20 }
+        note: "bias de estaciones débiles: ajustar componentes según assessment"
+
+  st_hx_compromised_run:
+    name: "Carrera comprometida (Rønnestad-adapted)"
+    blocks:
+      - method: emom
+        variant: every_n_seconds
+        intent_declared: conditioning
+        energy_system: aerobic_power
+        params: { interval_sec: 45, total_intervals: 26,
+                  work_rest_pattern: "30s hard / 15s float" }
+        exercise: { type: concrete, ref: run }
+        note: "Rønnestad 30/15: 2 series de 13 intervalos, 3min entre series"
+      - method: complex
+        variant: fixed_round_circuit
+        family: circuit
+        intent_declared: conditioning
+        energy_system: mixed
+        params: { total_rounds: 3, rest_inter_round_sec: 90 }
+        components:
+          - { exercise: { type: concrete, ref: run }, work: "400m @ race pace" }
+          - { exercise: { type: concrete, ref: sandbag_lunge }, work: "20m" }
+        note: "transición run→estación→run: la habilidad específica de HYROX"
+
+  st_hx_long_aerobic:
+    name: "Aeróbico largo"
+    blocks:
+      - method: straight
+        variant: default
+        exercise:
+          type: placeholder
+          query: { movement_pattern: locomotion, implement_in: [bodyweight, erg_row, erg_bike] }
+          fallback_via: equivalences
+        params: { duration_min: 50, intensity: "Z2 conversacional" }
+        intent_declared: conditioning
+        energy_system: aerobic_power
+        note: "placeholder deliberado: run/row/bike según estado de piernas"
+
+
+microcycle_templates:
+
+  mc_fuerza_3d:
+    name: "Semana fuerza 3 días"
+    slots:
+      - { slot_id: lower_heavy, intent: strength, session_template: st_lower_heavy,
+          day_preference: 1, primary_patterns: [squat, hinge] }
+      - { slot_id: upper_heavy, intent: strength, session_template: st_upper_heavy,
+          day_preference: 3, primary_patterns: [push_h, pull_v] }
+      - { slot_id: full_volume, intent: mixed, session_template: st_full_volume,
+          day_preference: 5, primary_patterns: [hinge, push_v] }
+    interference_rules:
+      - "slot(lower_heavy) y slot(full_volume) separados >= 48h (ambos cargan hinge)"
+
+  mc_hyrox_5d:
+    name: "Semana HYROX 5 días"
+    slots:
+      - { slot_id: lower_strength, intent: strength, session_template: st_hx_lower_strength,
+          day_preference: 1, primary_patterns: [squat, hinge],
+          conditioning_load_target: low }
+      - { slot_id: stations, intent: conditioning, session_template: st_hx_stations,
+          day_preference: 2, conditioning_load_target: high }
+      - { slot_id: upper_carry, intent: mixed, session_template: st_hx_upper_carry,
+          day_preference: 3, primary_patterns: [push_h, pull_v, carry],
+          conditioning_load_target: moderate }
+      - { slot_id: compromised_run, intent: conditioning, session_template: st_hx_compromised_run,
+          day_preference: 5, conditioning_load_target: high }
+      - { slot_id: long_aerobic, intent: recovery, session_template: st_hx_long_aerobic,
+          day_preference: 6, conditioning_load_target: moderate }
+    interference_rules:
+      - "slot(compromised_run) >= 48h después de slot(lower_strength): calidad de carrera requiere piernas frescas tras squat/hinge pesado"
+      - "slot(stations) NO adyacente a slot(compromised_run): dos cargas lactic high consecutivas comprometen ambas"
+      - "slot(lower_strength) día 1 fijo: es la sesión que más recuperación demanda hacia atrás y hacia adelante"
+      - "conditioning_load semanal: 2 high + 2 moderate máximo (consume acwr de C.4)"
+
+
+mesocycle_templates:
+
+  mt_fuerza_base_4_1:
+    id: mt_fuerza_base_4_1
+    version: 1
+    status: published
+    forked_from: null
+    name: "Fuerza base 4+1"
+    periodization_model: linear            # formalizado en D.3
+    duration_weeks: 5
+    weeks:
+      - { week: 1, microcycle: mc_fuerza_3d, modifiers: { load_pct_delta: 0,  sets_delta: 0 } }
+      - { week: 2, microcycle: mc_fuerza_3d, modifiers: { load_pct_delta: +2.5, sets_delta: 0 } }
+      - { week: 3, microcycle: mc_fuerza_3d, modifiers: { load_pct_delta: +5,  sets_delta: 0 } }
+      - { week: 4, microcycle: mc_fuerza_3d, modifiers: { load_pct_delta: +7.5, sets_delta: -1,
+          note: "intensificación: más carga, un set menos en accesorios" } }
+      - { week: 5, microcycle: mc_fuerza_3d, type: planned_deload,
+          modifiers: { load_pct_delta: 0, sets_pct: -40 },
+          note: "descarga proactiva: receta default de C.5 aplicada como estructura" }
+    progression_scheme:
+      axis: intensity
+      pattern: "linear ramp +2.5%/semana sobre top sets, deload semana 5"
+    library_metadata:
+      goal: [strength]
+      level: intermediate
+      weekly_sessions: 3
+      weekly_time_budget_min: 210
+      author: human
+      # equipment_required: DERIVADO → [barbell, dumbbell|machine, cable|dumbbell,
+      #                                 pull_up_bar] (resolución de placeholders)
+
+# =============================================================================
+# TEMPLATE 2 — "HYROX prep concurrente 5d"
+# =============================================================================
+
+  mt_hyrox_prep_3_1:
+    id: mt_hyrox_prep_3_1
+    version: 1
+    status: published
+    forked_from: null
+    name: "HYROX prep concurrente 3+1"
+    periodization_model: concurrent_hybrid   # formalizado en D.3
+    duration_weeks: 4
+    weeks:
+      - { week: 1, microcycle: mc_hyrox_5d,
+          modifiers: { conditioning_volume_pct: 0, strength_load_delta: 0 } }
+      - { week: 2, microcycle: mc_hyrox_5d,
+          modifiers: { conditioning_volume_pct: +10, strength_load_delta: 0,
+          note: "conditioning progresa (intervalos 26→30), fuerza mantiene" } }
+      - { week: 3, microcycle: mc_hyrox_5d,
+          modifiers: { conditioning_volume_pct: +20, strength_load_delta: +2.5 } }
+      - { week: 4, microcycle: mc_hyrox_5d, type: planned_deload,
+          modifiers: { conditioning_volume_pct: -40, strength_load_delta: 0,
+                       sets_pct: -40 } }
+    progression_scheme:
+      axis: conditioning_volume
+      pattern: "fuerza en mantenimiento (cluster/contrast, baja dosis alta calidad);
+                conditioning rampa +10%/semana; deload semana 4"
+      rationale: "concurrente con sesgo HYROX: la fuerza se sostiene con estímulo
+                  mínimo efectivo, el motor aeróbico/láctico es el eje que progresa"
+    library_metadata:
+      goal: [hyrox_prep, concurrent]
+      level: advanced
+      weekly_sessions: 5
+      weekly_time_budget_min: 360
+      author: human

@@ -1,0 +1,919 @@
+# =============================================================================
+# Exercise Catalog Seed — Part 2: Bodyweight, Skill Tracks, KB, HYROX
+# Training Taxonomy v2 — Layer B
+# =============================================================================
+
+catalog_version: "1.0-seed"
+part: 2
+schema_ref: "taxonomy_v2 Layer B (B.0-B.5)"
+
+# Cross-file edges whose SOURCE lives in part 1, plus variation-sourced edges
+edges_addenda:
+  - { source: { exercise: lat_pulldown }, target: { exercise: pull_up }, mechanism: assistance, magnitude: medium, notes: "external load → bodyweight" }
+  - { source: { exercise: assisted_pullup_machine }, target: { exercise: pull_up }, mechanism: assistance, magnitude: medium }
+  - { source: { exercise: push_up, variation: incline }, target: { exercise: pike_push_up }, mechanism: angle, magnitude: small, notes: "shoulder-dominant rebias; incline (3.0) → pike (3.5)" }
+
+exercises:
+
+  # ---------------------------------------------------------------------------
+  # PUSH_H LINE (bodyweight)
+  # ---------------------------------------------------------------------------
+
+  push_up:
+    name: "Push-up"
+    name_es: "Flexión de brazos"
+    movement_pattern: push_h
+    body_segment: upper
+    primary_muscles: [pectorals, triceps]
+    secondary_muscles: [anterior_deltoid, abdominals]
+    kinetic_chain: closed
+    laterality_default: bilateral
+    implement: bodyweight
+    load_metric_primary: bodyweight_ratio
+    load_metrics_supported: [bodyweight_ratio, absolute_load]
+    is_loadable_external: true
+    mechanical_demand_index: 4.0
+    technical_complexity_index: 2.0
+    typical_time_per_rep_sec: 1.5
+    is_anchor: true
+    variations:
+      - { id: wall, name: "Wall push-up", modifies: [assistance], mechanical_demand_delta: -3.0, technical_complexity_delta: -1.0 }
+      - { id: knees, name: "Knee push-up", modifies: [assistance], mechanical_demand_delta: -1.5, technical_complexity_delta: -0.5 }
+      - { id: incline, name: "Incline (hands elevated)", modifies: [assistance], mechanical_demand_delta: -1.0, technical_complexity_delta: -0.3 }
+      - { id: deficit, name: "Deficit", modifies: [rom], mechanical_demand_delta: 0.8, technical_complexity_delta: 0.2 }
+      - { id: decline, name: "Decline (feet elevated)", modifies: [angle], mechanical_demand_delta: 0.7, technical_complexity_delta: 0.2 }
+      - { id: diamond, name: "Diamond", modifies: [grip], mechanical_demand_delta: 0.6, technical_complexity_delta: 0.2 }
+      - { id: archer, name: "Archer", modifies: [load_position], mechanical_demand_delta: 2.0, technical_complexity_delta: 1.0 }
+    progressions:
+      - { target: { exercise: one_arm_push_up }, mechanism: leverage, magnitude: large, notes: "enter via archer ladder" }
+      - { target: { exercise: planche_lean }, mechanism: leverage, magnitude: medium }
+      - { target: { exercise: dip }, mechanism: angle, magnitude: small }
+    tags: [calisthenics, fundamental]
+
+  one_arm_push_up:
+    name: "One-arm push-up"
+    name_es: "Flexión a un brazo"
+    movement_pattern: push_h
+    body_segment: upper
+    primary_muscles: [pectorals, triceps]
+    secondary_muscles: [anterior_deltoid, obliques, abdominals]
+    kinetic_chain: closed
+    laterality_default: unilateral_one_side
+    implement: bodyweight
+    load_metric_primary: bodyweight_ratio
+    load_metrics_supported: [bodyweight_ratio]
+    mechanical_demand_index: 7.5
+    technical_complexity_index: 5.0
+    typical_time_per_rep_sec: 2.0
+    is_anchor: true
+    variations:
+      - { id: incline, name: "Incline OAP", modifies: [assistance], mechanical_demand_delta: -1.0, technical_complexity_delta: -0.3 }
+    tags: [calisthenics, advanced]
+
+  # ---------------------------------------------------------------------------
+  # PLANCHE LINE (skill track stress test — B.3 marca)
+  # ---------------------------------------------------------------------------
+
+  planche_lean:
+    name: "Planche lean"
+    name_es: "Inclinación de plancha"
+    movement_pattern: push_h
+    body_segment: upper
+    primary_muscles: [anterior_deltoid, pectorals]
+    secondary_muscles: [forearms, abdominals, biceps]
+    kinetic_chain: closed
+    laterality_default: bilateral
+    implement: bodyweight
+    load_metric_primary: time
+    load_metrics_supported: [time]
+    mechanical_demand_index: 5.5
+    technical_complexity_index: 4.0
+    typical_time_per_rep_sec: 15.0
+    progressions:
+      - { target: { exercise: tuck_planche }, mechanism: leverage, magnitude: large }
+    tags: [calisthenics, skill_track, planche_line]
+
+  tuck_planche:
+    name: "Tuck planche"
+    name_es: "Plancha agrupada"
+    movement_pattern: push_h
+    body_segment: full
+    primary_muscles: [anterior_deltoid, pectorals]
+    secondary_muscles: [forearms, abdominals, biceps, upper_back]
+    kinetic_chain: closed
+    laterality_default: bilateral
+    implement: bodyweight
+    load_metric_primary: time
+    load_metrics_supported: [time]
+    mechanical_demand_index: 7.0
+    technical_complexity_index: 6.0
+    typical_time_per_rep_sec: 10.0
+    variations:
+      - { id: advanced, name: "Advanced tuck (flat back)", modifies: [load_position], mechanical_demand_delta: 1.0, technical_complexity_delta: 0.5 }
+    progressions:
+      - { target: { exercise: straddle_planche }, mechanism: leverage, magnitude: large, notes: "from advanced tuck" }
+    tags: [calisthenics, skill_track, planche_line]
+
+  straddle_planche:
+    name: "Straddle planche"
+    name_es: "Plancha abierta"
+    movement_pattern: push_h
+    body_segment: full
+    primary_muscles: [anterior_deltoid, pectorals]
+    secondary_muscles: [forearms, abdominals, upper_back, glutes]
+    kinetic_chain: closed
+    laterality_default: bilateral
+    implement: bodyweight
+    load_metric_primary: time
+    load_metrics_supported: [time]
+    mechanical_demand_index: 9.0
+    technical_complexity_index: 8.0
+    typical_time_per_rep_sec: 6.0
+    progressions:
+      - { target: { exercise: full_planche }, mechanism: leverage, magnitude: large }
+    tags: [calisthenics, skill_track, planche_line]
+
+  full_planche:
+    name: "Full planche"
+    name_es: "Plancha completa"
+    movement_pattern: push_h
+    body_segment: full
+    primary_muscles: [anterior_deltoid, pectorals]
+    secondary_muscles: [forearms, abdominals, upper_back, glutes, spinal_erectors]
+    kinetic_chain: closed
+    laterality_default: bilateral
+    implement: bodyweight
+    load_metric_primary: time
+    load_metrics_supported: [time]
+    mechanical_demand_index: 9.8
+    technical_complexity_index: 9.0
+    typical_time_per_rep_sec: 4.0
+    tags: [calisthenics, skill_track, planche_line]
+
+  pseudo_planche_push_up:
+    name: "Pseudo-planche push-up"
+    name_es: "Flexión pseudo-plancha"
+    movement_pattern: push_h
+    body_segment: upper
+    primary_muscles: [anterior_deltoid, pectorals, triceps]
+    secondary_muscles: [forearms, abdominals, biceps]
+    kinetic_chain: closed
+    laterality_default: bilateral
+    implement: bodyweight
+    load_metric_primary: bodyweight_ratio
+    load_metrics_supported: [bodyweight_ratio]
+    mechanical_demand_index: 8.5
+    technical_complexity_index: 5.5
+    typical_time_per_rep_sec: 2.5
+    is_anchor: true
+    progressions:
+      - { target: { exercise: planche_push_up, variation: straddle }, mechanism: leverage, magnitude: large }
+    tags: [calisthenics, skill_track, planche_line]
+
+  planche_push_up:
+    name: "Planche push-up (full)"
+    name_es: "Flexión en plancha completa"
+    movement_pattern: push_h
+    body_segment: full
+    primary_muscles: [anterior_deltoid, pectorals, triceps]
+    secondary_muscles: [forearms, abdominals, upper_back, glutes]
+    kinetic_chain: closed
+    laterality_default: bilateral
+    implement: bodyweight
+    load_metric_primary: bodyweight_ratio
+    load_metrics_supported: [bodyweight_ratio]
+    mechanical_demand_index: 10.0
+    technical_complexity_index: 9.5
+    typical_time_per_rep_sec: 3.0
+    is_anchor: true
+    variations:
+      - { id: straddle, name: "Straddle planche push-up", modifies: [load_position], mechanical_demand_delta: -0.5, technical_complexity_delta: -0.5 }
+    tags: [calisthenics, skill_track, planche_line]
+
+  # ---------------------------------------------------------------------------
+  # PULL_V LINE
+  # ---------------------------------------------------------------------------
+
+  scapular_pull:
+    name: "Scapular pull"
+    name_es: "Retracción escapular en barra"
+    movement_pattern: pull_v
+    body_segment: upper
+    primary_muscles: [lats, upper_back]
+    secondary_muscles: [forearms]
+    kinetic_chain: closed
+    laterality_default: bilateral
+    implement: pull_up_bar
+    load_metric_primary: bodyweight_ratio
+    load_metrics_supported: [bodyweight_ratio]
+    mechanical_demand_index: 2.0
+    technical_complexity_index: 2.0
+    typical_time_per_rep_sec: 2.0
+    progressions:
+      - { target: { exercise: pull_up }, mechanism: complexity, magnitude: large, notes: "full ROM + elbow flexion" }
+    tags: [calisthenics, beginner]
+
+  pull_up:
+    name: "Pull-up"
+    name_es: "Dominada"
+    movement_pattern: pull_v
+    body_segment: upper
+    primary_muscles: [lats, biceps]
+    secondary_muscles: [upper_back, posterior_deltoid, forearms, abdominals]
+    kinetic_chain: closed
+    laterality_default: bilateral
+    implement: pull_up_bar
+    load_metric_primary: bodyweight_ratio
+    load_metrics_supported: [bodyweight_ratio, absolute_load]
+    is_loadable_external: true
+    mechanical_demand_index: 5.0
+    technical_complexity_index: 3.0
+    typical_time_per_rep_sec: 2.0
+    is_anchor: true
+    variations:
+      - { id: band_assisted, name: "Band assisted", modifies: [assistance], mechanical_demand_delta: -1.5, technical_complexity_delta: -0.3 }
+      - { id: negative_only, name: "Negative only", modifies: [assistance], mechanical_demand_delta: -1.0, technical_complexity_delta: -0.3 }
+      - { id: l_sit, name: "L-sit pull-up", modifies: [load_position], mechanical_demand_delta: 0.8, technical_complexity_delta: 0.5 }
+      - { id: archer, name: "Archer", modifies: [load_position], mechanical_demand_delta: 2.0, technical_complexity_delta: 1.0 }
+      - { id: wide_grip, name: "Wide grip", modifies: [grip], mechanical_demand_delta: 0.4, technical_complexity_delta: 0.0 }
+    progressions:
+      - { target: { exercise: one_arm_chin_up }, mechanism: leverage, magnitude: large, notes: "via archer ladder + weighted work" }
+    tags: [calisthenics, fundamental, hub]
+
+  chin_up:
+    name: "Chin-up"
+    name_es: "Dominada supina"
+    movement_pattern: pull_v
+    body_segment: upper
+    primary_muscles: [biceps, lats]
+    secondary_muscles: [upper_back, forearms]
+    kinetic_chain: closed
+    laterality_default: bilateral
+    implement: pull_up_bar
+    load_metric_primary: bodyweight_ratio
+    load_metrics_supported: [bodyweight_ratio, absolute_load]
+    is_loadable_external: true
+    mechanical_demand_index: 4.7
+    technical_complexity_index: 2.5
+    typical_time_per_rep_sec: 2.0
+    equivalences:
+      - { target: pull_up, similarity: high, notes: "grip-biased equivalent; chin slightly easier for most" }
+    tags: [calisthenics, fundamental]
+
+  one_arm_chin_up:
+    name: "One-arm chin-up"
+    name_es: "Dominada a un brazo"
+    movement_pattern: pull_v
+    body_segment: upper
+    primary_muscles: [biceps, lats]
+    secondary_muscles: [forearms, upper_back, obliques]
+    kinetic_chain: closed
+    laterality_default: unilateral_one_side
+    implement: pull_up_bar
+    load_metric_primary: bodyweight_ratio
+    load_metrics_supported: [bodyweight_ratio]
+    mechanical_demand_index: 9.0
+    technical_complexity_index: 6.5
+    typical_time_per_rep_sec: 3.0
+    is_anchor: true
+    tags: [calisthenics, advanced, skill_track]
+
+  # ---------------------------------------------------------------------------
+  # PULL_H BODYWEIGHT
+  # ---------------------------------------------------------------------------
+
+  inverted_row:
+    name: "Inverted row"
+    name_es: "Remo invertido"
+    movement_pattern: pull_h
+    body_segment: upper
+    primary_muscles: [upper_back, lats]
+    secondary_muscles: [biceps, posterior_deltoid, abdominals]
+    kinetic_chain: closed
+    laterality_default: bilateral
+    implement: bodyweight
+    load_metric_primary: bodyweight_ratio
+    load_metrics_supported: [bodyweight_ratio]
+    mechanical_demand_index: 3.0
+    technical_complexity_index: 1.5
+    typical_time_per_rep_sec: 2.0
+    variations:
+      - { id: incline_45, name: "45° incline", modifies: [assistance], mechanical_demand_delta: -1.0, technical_complexity_delta: -0.3 }
+      - { id: feet_elevated, name: "Feet elevated", modifies: [angle], mechanical_demand_delta: 0.8, technical_complexity_delta: 0.2 }
+      - { id: one_arm, name: "One-arm", modifies: [load_position], mechanical_demand_delta: 2.0, technical_complexity_delta: 1.0 }
+    tags: [calisthenics, fundamental]
+
+  # ---------------------------------------------------------------------------
+  # DIP LINE
+  # ---------------------------------------------------------------------------
+
+  dip:
+    name: "Dip (parallel bars)"
+    name_es: "Fondos en paralelas"
+    movement_pattern: push_v
+    body_segment: upper
+    primary_muscles: [triceps, pectorals]
+    secondary_muscles: [anterior_deltoid]
+    kinetic_chain: closed
+    laterality_default: bilateral
+    implement: parallettes
+    load_metric_primary: bodyweight_ratio
+    load_metrics_supported: [bodyweight_ratio, absolute_load]
+    is_loadable_external: true
+    mechanical_demand_index: 4.5
+    technical_complexity_index: 2.5
+    typical_time_per_rep_sec: 2.0
+    variations:
+      - { id: band_assisted, name: "Band assisted", modifies: [assistance], mechanical_demand_delta: -1.5, technical_complexity_delta: -0.3 }
+      - { id: ring, name: "Ring dips", modifies: [surface], mechanical_demand_delta: 1.0, technical_complexity_delta: 1.0 }
+    tags: [calisthenics, fundamental]
+
+  # ---------------------------------------------------------------------------
+  # SQUAT / PISTOL LINE (bodyweight)
+  # ---------------------------------------------------------------------------
+
+  air_squat:
+    name: "Air squat"
+    name_es: "Sentadilla sin carga"
+    movement_pattern: squat
+    body_segment: lower
+    primary_muscles: [quadriceps, glutes]
+    secondary_muscles: [hamstrings]
+    kinetic_chain: closed
+    laterality_default: bilateral
+    implement: bodyweight
+    load_metric_primary: bodyweight_ratio
+    load_metrics_supported: [bodyweight_ratio]
+    mechanical_demand_index: 2.0
+    technical_complexity_index: 1.5
+    typical_time_per_rep_sec: 1.5
+    is_anchor: true
+    variations:
+      - { id: to_bench, name: "To bench", modifies: [assistance], mechanical_demand_delta: -1.0, technical_complexity_delta: -0.5 }
+      - { id: jump, name: "Jump squat", modifies: [tempo], mechanical_demand_delta: 0.8, technical_complexity_delta: 0.5 }
+    progressions:
+      - { target: { exercise: goblet_squat }, mechanism: load, magnitude: small }
+      - { target: { exercise: pistol_squat, variation: assisted }, mechanism: stability, magnitude: large }
+    tags: [calisthenics, fundamental, hyrox]
+
+  pistol_squat:
+    name: "Pistol squat"
+    name_es: "Sentadilla a una pierna"
+    movement_pattern: squat
+    body_segment: lower
+    primary_muscles: [quadriceps, glutes]
+    secondary_muscles: [hamstrings, abdominals, hip_flexors, calves]
+    kinetic_chain: closed
+    laterality_default: unilateral_one_side
+    implement: bodyweight
+    load_metric_primary: bodyweight_ratio
+    load_metrics_supported: [bodyweight_ratio, absolute_load]
+    is_loadable_external: true
+    mechanical_demand_index: 6.5
+    technical_complexity_index: 5.5
+    typical_time_per_rep_sec: 3.0
+    is_anchor: true
+    variations:
+      - { id: assisted, name: "Assisted (pole/TRX)", modifies: [assistance], mechanical_demand_delta: -1.5, technical_complexity_delta: -1.5 }
+      - { id: to_box, name: "To box", modifies: [assistance], mechanical_demand_delta: -1.0, technical_complexity_delta: -1.0 }
+      - { id: counterweight, name: "Counterweight", modifies: [assistance], mechanical_demand_delta: -0.8, technical_complexity_delta: -0.8 }
+    tags: [calisthenics, unilateral, advanced]
+
+  # ---------------------------------------------------------------------------
+  # HSPU LINE (push_v bodyweight)
+  # ---------------------------------------------------------------------------
+
+  pike_push_up:
+    name: "Pike push-up"
+    name_es: "Flexión en pica"
+    movement_pattern: push_v
+    body_segment: upper
+    primary_muscles: [anterior_deltoid, triceps]
+    secondary_muscles: [upper_back, pectorals]
+    kinetic_chain: closed
+    laterality_default: bilateral
+    implement: bodyweight
+    load_metric_primary: bodyweight_ratio
+    load_metrics_supported: [bodyweight_ratio]
+    mechanical_demand_index: 3.5
+    technical_complexity_index: 2.5
+    typical_time_per_rep_sec: 2.0
+    is_anchor: true
+    variations:
+      - { id: elevated, name: "Feet elevated", modifies: [angle], mechanical_demand_delta: 2.0, technical_complexity_delta: 0.8 }
+    progressions:
+      - { target: { exercise: handstand_push_up_wall }, mechanism: angle, magnitude: large, notes: "enter via elevated ladder" }
+    tags: [calisthenics, fundamental]
+
+  handstand_push_up_wall:
+    name: "Handstand push-up (wall)"
+    name_es: "Flexión en parada de manos contra pared"
+    movement_pattern: push_v
+    body_segment: full
+    primary_muscles: [anterior_deltoid, triceps]
+    secondary_muscles: [upper_back, abdominals, forearms]
+    kinetic_chain: closed
+    laterality_default: bilateral
+    implement: bodyweight
+    load_metric_primary: bodyweight_ratio
+    load_metrics_supported: [bodyweight_ratio]
+    mechanical_demand_index: 7.0
+    technical_complexity_index: 5.5
+    typical_time_per_rep_sec: 2.5
+    is_anchor: true
+    variations:
+      - { id: deficit, name: "Deficit (parallettes)", modifies: [rom], mechanical_demand_delta: 1.0, technical_complexity_delta: 0.5 }
+      - { id: eccentric_only, name: "Eccentric only", modifies: [assistance], mechanical_demand_delta: -1.0, technical_complexity_delta: -0.5 }
+      - { id: kipping, name: "Kipping", modifies: [assistance], mechanical_demand_delta: -1.2, technical_complexity_delta: 0.5 }
+    progressions:
+      - { target: { exercise: handstand_push_up_free }, mechanism: stability, magnitude: large }
+    tags: [calisthenics, crossfit, hyrox_adjacent]
+
+  handstand_push_up_free:
+    name: "Freestanding handstand push-up"
+    name_es: "Flexión en parada de manos libre"
+    movement_pattern: push_v
+    body_segment: full
+    primary_muscles: [anterior_deltoid, triceps]
+    secondary_muscles: [upper_back, abdominals, forearms]
+    kinetic_chain: closed
+    laterality_default: bilateral
+    implement: bodyweight
+    load_metric_primary: bodyweight_ratio
+    load_metrics_supported: [bodyweight_ratio]
+    mechanical_demand_index: 9.0
+    technical_complexity_index: 9.0
+    typical_time_per_rep_sec: 3.0
+    tags: [calisthenics, advanced, skill_track]
+
+  # ---------------------------------------------------------------------------
+  # CORE LINES
+  # ---------------------------------------------------------------------------
+
+  plank:
+    name: "Plank"
+    name_es: "Plancha abdominal"
+    movement_pattern: anti_extension
+    body_segment: core
+    primary_muscles: [abdominals]
+    secondary_muscles: [obliques, anterior_deltoid, glutes]
+    kinetic_chain: closed
+    laterality_default: bilateral
+    implement: bodyweight
+    load_metric_primary: time
+    load_metrics_supported: [time]
+    mechanical_demand_index: 3.0
+    technical_complexity_index: 1.0
+    typical_time_per_rep_sec: 30.0
+    is_anchor: true
+    variations:
+      - { id: knees, name: "Knee plank", modifies: [assistance], mechanical_demand_delta: -1.5, technical_complexity_delta: -0.3 }
+      - { id: long_lever, name: "Long lever", modifies: [load_position], mechanical_demand_delta: 0.8, technical_complexity_delta: 0.3 }
+      - { id: rkc, name: "RKC (max tension)", modifies: [tempo], mechanical_demand_delta: 0.5, technical_complexity_delta: 0.3 }
+    progressions:
+      - { target: { exercise: ab_wheel }, mechanism: leverage, magnitude: medium }
+    tags: [core, fundamental]
+
+  ab_wheel:
+    name: "Ab wheel rollout (kneeling)"
+    name_es: "Rueda abdominal de rodillas"
+    movement_pattern: anti_extension
+    body_segment: core
+    primary_muscles: [abdominals]
+    secondary_muscles: [lats, obliques, hip_flexors]
+    kinetic_chain: closed
+    laterality_default: bilateral
+    implement: bodyweight
+    load_metric_primary: bodyweight_ratio
+    load_metrics_supported: [bodyweight_ratio]
+    mechanical_demand_index: 5.0
+    technical_complexity_index: 3.0
+    typical_time_per_rep_sec: 3.0
+    is_anchor: true
+    variations:
+      - { id: standing, name: "Standing rollout", modifies: [load_position], mechanical_demand_delta: 2.5, technical_complexity_delta: 1.5 }
+      - { id: partial, name: "Partial ROM", modifies: [rom], mechanical_demand_delta: -1.0, technical_complexity_delta: -0.5 }
+    progressions:
+      - { target: { exercise: front_lever, variation: tuck }, mechanism: leverage, magnitude: large }
+    tags: [core]
+
+  front_lever:
+    name: "Front lever"
+    name_es: "Palanca frontal"
+    movement_pattern: anti_extension
+    body_segment: full
+    primary_muscles: [lats, abdominals]
+    secondary_muscles: [upper_back, spinal_erectors, glutes, forearms]
+    kinetic_chain: closed
+    laterality_default: bilateral
+    implement: pull_up_bar
+    load_metric_primary: time
+    load_metrics_supported: [time]
+    mechanical_demand_index: 9.5
+    technical_complexity_index: 7.5
+    typical_time_per_rep_sec: 5.0
+    is_anchor: true
+    variations:
+      - { id: tuck, name: "Tuck front lever", modifies: [load_position], mechanical_demand_delta: -3.0, technical_complexity_delta: -2.5 }
+      - { id: advanced_tuck, name: "Advanced tuck", modifies: [load_position], mechanical_demand_delta: -2.0, technical_complexity_delta: -2.0 }
+      - { id: straddle, name: "Straddle", modifies: [load_position], mechanical_demand_delta: -1.0, technical_complexity_delta: -1.0 }
+    tags: [calisthenics, skill_track, core]
+
+  hanging_leg_raise:
+    name: "Hanging leg raise"
+    name_es: "Elevación de piernas colgado"
+    movement_pattern: anti_extension
+    body_segment: core
+    primary_muscles: [abdominals, hip_flexors]
+    secondary_muscles: [obliques, forearms, lats]
+    kinetic_chain: open
+    laterality_default: bilateral
+    implement: pull_up_bar
+    load_metric_primary: bodyweight_ratio
+    load_metrics_supported: [bodyweight_ratio]
+    mechanical_demand_index: 4.0
+    technical_complexity_index: 2.5
+    typical_time_per_rep_sec: 2.5
+    variations:
+      - { id: knee_raise, name: "Knee raise", modifies: [load_position], mechanical_demand_delta: -1.5, technical_complexity_delta: -0.5 }
+      - { id: toes_to_bar, name: "Toes to bar", modifies: [rom], mechanical_demand_delta: 1.0, technical_complexity_delta: 1.0 }
+    tags: [core, crossfit]
+
+  hollow_hold:
+    name: "Hollow hold"
+    name_es: "Posición hueca"
+    movement_pattern: anti_extension
+    body_segment: core
+    primary_muscles: [abdominals]
+    secondary_muscles: [hip_flexors, obliques]
+    kinetic_chain: open
+    laterality_default: bilateral
+    implement: bodyweight
+    load_metric_primary: time
+    load_metrics_supported: [time]
+    mechanical_demand_index: 2.5
+    technical_complexity_index: 2.0
+    typical_time_per_rep_sec: 20.0
+    variations:
+      - { id: tuck, name: "Tuck hollow", modifies: [load_position], mechanical_demand_delta: -1.0, technical_complexity_delta: -0.5 }
+      - { id: rocks, name: "Hollow rocks", modifies: [tempo], mechanical_demand_delta: 0.5, technical_complexity_delta: 0.3 }
+    tags: [core, gymnastics]
+
+  # ---------------------------------------------------------------------------
+  # KETTLEBELL
+  # ---------------------------------------------------------------------------
+
+  kb_swing_two_hand:
+    name: "Kettlebell swing (two-hand)"
+    name_es: "Swing de kettlebell a dos manos"
+    movement_pattern: hinge
+    body_segment: full
+    primary_muscles: [glutes, hamstrings]
+    secondary_muscles: [spinal_erectors, abdominals, forearms, lats]
+    kinetic_chain: closed
+    laterality_default: bilateral
+    implement: kettlebell
+    load_metric_primary: absolute_load
+    load_metrics_supported: [absolute_load]
+    mechanical_demand_index: 2.5
+    technical_complexity_index: 3.0
+    typical_time_per_rep_sec: 1.5
+    parallel_category: ballistic
+    variations:
+      - { id: single_arm, name: "Single arm", modifies: [grip], mechanical_demand_delta: 0.5, technical_complexity_delta: 0.5 }
+      - { id: american, name: "American (overhead)", modifies: [rom], mechanical_demand_delta: 0.8, technical_complexity_delta: 0.8 }
+    progressions:
+      - { target: { exercise: kb_clean }, mechanism: complexity, magnitude: medium }
+    tags: [kettlebell, ballistic, hyrox_adjacent]
+
+  kb_clean:
+    name: "Kettlebell clean (single arm)"
+    name_es: "Cargada de kettlebell"
+    movement_pattern: olympic_pull
+    body_segment: full
+    primary_muscles: [glutes, hamstrings, upper_back]
+    secondary_muscles: [biceps, forearms, abdominals]
+    kinetic_chain: closed
+    laterality_default: unilateral_one_side
+    implement: kettlebell
+    load_metric_primary: absolute_load
+    load_metrics_supported: [absolute_load]
+    mechanical_demand_index: 3.0
+    technical_complexity_index: 4.5
+    typical_time_per_rep_sec: 1.5
+    parallel_category: ballistic
+    progressions:
+      - { target: { exercise: kb_snatch }, mechanism: complexity, magnitude: medium }
+    tags: [kettlebell]
+
+  kb_snatch:
+    name: "Kettlebell snatch"
+    name_es: "Arranque de kettlebell"
+    movement_pattern: olympic_pull
+    body_segment: full
+    primary_muscles: [glutes, hamstrings, lateral_deltoid]
+    secondary_muscles: [upper_back, forearms, abdominals]
+    kinetic_chain: closed
+    laterality_default: unilateral_one_side
+    implement: kettlebell
+    load_metric_primary: absolute_load
+    load_metrics_supported: [absolute_load]
+    mechanical_demand_index: 3.8
+    technical_complexity_index: 6.0
+    typical_time_per_rep_sec: 1.5
+    parallel_category: ballistic
+    tags: [kettlebell, conditioning]
+
+  kb_press_single_arm:
+    name: "Kettlebell press (single arm)"
+    name_es: "Press de kettlebell a un brazo"
+    movement_pattern: push_v
+    body_segment: upper
+    primary_muscles: [anterior_deltoid, lateral_deltoid, triceps]
+    secondary_muscles: [abdominals, obliques, upper_back]
+    kinetic_chain: open
+    laterality_default: unilateral_one_side
+    implement: kettlebell
+    load_metric_primary: absolute_load
+    load_metrics_supported: [absolute_load]
+    mechanical_demand_index: 3.0
+    technical_complexity_index: 3.0
+    typical_time_per_rep_sec: 2.0
+    variations:
+      - { id: bottoms_up, name: "Bottoms-up", modifies: [grip], mechanical_demand_delta: 1.0, technical_complexity_delta: 1.5 }
+    tags: [kettlebell]
+
+  kb_front_squat_double:
+    name: "Double KB front squat"
+    name_es: "Sentadilla frontal con dos kettlebells"
+    movement_pattern: squat
+    body_segment: lower
+    primary_muscles: [quadriceps, glutes]
+    secondary_muscles: [abdominals, upper_back, spinal_erectors]
+    kinetic_chain: closed
+    laterality_default: bilateral
+    implement: kettlebell
+    load_metric_primary: absolute_load
+    load_metrics_supported: [absolute_load]
+    mechanical_demand_index: 3.0
+    technical_complexity_index: 2.5
+    typical_time_per_rep_sec: 3.0
+    tags: [kettlebell]
+
+  kb_turkish_getup:
+    name: "Turkish get-up"
+    name_es: "Levantamiento turco"
+    movement_pattern: carry
+    body_segment: full
+    primary_muscles: [abdominals, obliques, anterior_deltoid]
+    secondary_muscles: [glutes, quadriceps, triceps, upper_back]
+    kinetic_chain: closed
+    laterality_default: unilateral_one_side
+    implement: kettlebell
+    load_metric_primary: absolute_load
+    load_metrics_supported: [absolute_load]
+    mechanical_demand_index: 4.0
+    technical_complexity_index: 6.5
+    typical_time_per_rep_sec: 30.0
+    tags: [kettlebell, stability, prehab]
+
+  kb_row_single_arm:
+    name: "Kettlebell row (single arm)"
+    name_es: "Remo de kettlebell"
+    movement_pattern: pull_h
+    body_segment: upper
+    primary_muscles: [lats, upper_back]
+    secondary_muscles: [biceps, forearms]
+    kinetic_chain: open
+    laterality_default: unilateral_one_side
+    implement: kettlebell
+    load_metric_primary: absolute_load
+    load_metrics_supported: [absolute_load]
+    mechanical_demand_index: 2.5
+    technical_complexity_index: 1.5
+    typical_time_per_rep_sec: 2.0
+    equivalences:
+      - { target: row_dumbbell, similarity: high }
+    tags: [kettlebell]
+
+  kb_windmill:
+    name: "Kettlebell windmill"
+    name_es: "Molino con kettlebell"
+    movement_pattern: rotation
+    body_segment: core
+    primary_muscles: [obliques, glutes]
+    secondary_muscles: [hamstrings, lateral_deltoid, abdominals]
+    kinetic_chain: closed
+    laterality_default: unilateral_one_side
+    implement: kettlebell
+    load_metric_primary: absolute_load
+    load_metrics_supported: [absolute_load]
+    mechanical_demand_index: 3.0
+    technical_complexity_index: 5.0
+    typical_time_per_rep_sec: 4.0
+    tags: [kettlebell, mobility]
+
+  # ---------------------------------------------------------------------------
+  # HYROX-SPECIFIC
+  # ---------------------------------------------------------------------------
+
+  wall_ball:
+    name: "Wall ball"
+    name_es: "Lanzamiento a pared"
+    movement_pattern: throw
+    body_segment: full
+    primary_muscles: [quadriceps, glutes, anterior_deltoid]
+    secondary_muscles: [pectorals, triceps, abdominals]
+    kinetic_chain: closed
+    laterality_default: bilateral
+    implement: wall_ball
+    load_metric_primary: absolute_load
+    load_metrics_supported: [absolute_load]
+    mechanical_demand_index: 2.5
+    technical_complexity_index: 2.5
+    typical_time_per_rep_sec: 2.0
+    parallel_category: ballistic
+    tags: [hyrox, crossfit, conditioning]
+
+  sled_push:
+    name: "Sled push"
+    name_es: "Empuje de trineo"
+    movement_pattern: locomotion
+    body_segment: full
+    primary_muscles: [quadriceps, glutes, calves]
+    secondary_muscles: [pectorals, triceps, abdominals]
+    kinetic_chain: closed
+    laterality_default: unilateral_alt
+    implement: sled
+    load_metric_primary: distance
+    load_metrics_supported: [distance, absolute_load, time]
+    mechanical_demand_index: 3.0
+    technical_complexity_index: 2.0
+    typical_time_per_rep_sec: 2.0
+    notes: "time_per_rep ≈ sec per meter at HYROX load"
+    tags: [hyrox, conditioning]
+
+  sled_pull:
+    name: "Sled pull"
+    name_es: "Arrastre de trineo"
+    movement_pattern: locomotion
+    body_segment: full
+    primary_muscles: [lats, upper_back, hamstrings]
+    secondary_muscles: [biceps, forearms, glutes]
+    kinetic_chain: closed
+    laterality_default: bilateral
+    implement: sled
+    load_metric_primary: distance
+    load_metrics_supported: [distance, absolute_load, time]
+    mechanical_demand_index: 3.0
+    technical_complexity_index: 2.0
+    typical_time_per_rep_sec: 2.5
+    tags: [hyrox, conditioning]
+
+  burpee:
+    name: "Burpee"
+    name_es: "Burpee"
+    movement_pattern: locomotion
+    body_segment: full
+    primary_muscles: [quadriceps, pectorals, abdominals]
+    secondary_muscles: [glutes, triceps, anterior_deltoid]
+    kinetic_chain: closed
+    laterality_default: bilateral
+    implement: bodyweight
+    load_metric_primary: bodyweight_ratio
+    load_metrics_supported: [bodyweight_ratio]
+    mechanical_demand_index: 3.0
+    technical_complexity_index: 2.0
+    typical_time_per_rep_sec: 3.0
+    variations:
+      - { id: broad_jump, name: "Burpee broad jump", modifies: [rom], mechanical_demand_delta: 0.8, technical_complexity_delta: 0.5 }
+      - { id: no_push_up, name: "No push-up (step)", modifies: [assistance], mechanical_demand_delta: -0.8, technical_complexity_delta: -0.3 }
+    tags: [hyrox, crossfit, conditioning]
+
+  farmers_carry:
+    name: "Farmers carry"
+    name_es: "Caminata del granjero"
+    movement_pattern: carry
+    body_segment: full
+    primary_muscles: [forearms, upper_back, abdominals]
+    secondary_muscles: [glutes, calves, obliques]
+    kinetic_chain: closed
+    laterality_default: bilateral
+    implement: kettlebell
+    load_metric_primary: distance
+    load_metrics_supported: [distance, absolute_load, time]
+    mechanical_demand_index: 2.5
+    technical_complexity_index: 1.0
+    typical_time_per_rep_sec: 1.2
+    notes: "time_per_rep ≈ sec per meter"
+    tags: [hyrox, grip, conditioning]
+
+  sandbag_lunge:
+    name: "Sandbag walking lunge"
+    name_es: "Zancada con sandbag"
+    movement_pattern: lunge
+    body_segment: lower
+    primary_muscles: [quadriceps, glutes]
+    secondary_muscles: [hamstrings, abdominals, upper_back]
+    kinetic_chain: closed
+    laterality_default: unilateral_alt
+    implement: sandbag
+    load_metric_primary: absolute_load
+    load_metrics_supported: [absolute_load, distance]
+    mechanical_demand_index: 3.5
+    technical_complexity_index: 2.0
+    typical_time_per_rep_sec: 2.2
+    equivalences:
+      - { target: lunge_dumbbell, similarity: medium, notes: "front-loaded vs at-sides changes trunk demand" }
+    tags: [hyrox]
+
+  row_erg:
+    name: "Rowing ergometer"
+    name_es: "Remoergómetro"
+    movement_pattern: locomotion
+    body_segment: full
+    primary_muscles: [quadriceps, glutes, lats, upper_back]
+    secondary_muscles: [hamstrings, biceps, spinal_erectors]
+    kinetic_chain: closed
+    laterality_default: bilateral
+    implement: erg_row
+    load_metric_primary: distance
+    load_metrics_supported: [distance, time]
+    mechanical_demand_index: 2.0
+    technical_complexity_index: 2.5
+    typical_time_per_rep_sec: 2.5
+    notes: "time_per_rep ≈ sec per stroke at moderate pace"
+    tags: [hyrox, conditioning, erg]
+
+  ski_erg:
+    name: "Ski ergometer"
+    name_es: "Esquí ergómetro"
+    movement_pattern: locomotion
+    body_segment: full
+    primary_muscles: [lats, triceps, abdominals]
+    secondary_muscles: [glutes, hamstrings, upper_back]
+    kinetic_chain: closed
+    laterality_default: bilateral
+    implement: erg_ski
+    load_metric_primary: distance
+    load_metrics_supported: [distance, time]
+    mechanical_demand_index: 2.0
+    technical_complexity_index: 2.5
+    typical_time_per_rep_sec: 1.8
+    tags: [hyrox, conditioning, erg]
+
+  bike_erg:
+    name: "Bike ergometer"
+    name_es: "Bicicleta ergómetro"
+    movement_pattern: locomotion
+    body_segment: lower
+    primary_muscles: [quadriceps, glutes]
+    secondary_muscles: [hamstrings, calves]
+    kinetic_chain: closed
+    laterality_default: unilateral_alt
+    implement: erg_bike
+    load_metric_primary: distance
+    load_metrics_supported: [distance, time]
+    mechanical_demand_index: 1.5
+    technical_complexity_index: 0.5
+    typical_time_per_rep_sec: 1.0
+    tags: [conditioning, erg]
+
+  run:
+    name: "Running"
+    name_es: "Carrera"
+    movement_pattern: locomotion
+    body_segment: lower
+    primary_muscles: [quadriceps, glutes, hamstrings, calves]
+    secondary_muscles: [hip_flexors, abdominals]
+    kinetic_chain: closed
+    laterality_default: unilateral_alt
+    implement: bodyweight
+    load_metric_primary: distance
+    load_metrics_supported: [distance, time]
+    mechanical_demand_index: 2.0
+    technical_complexity_index: 1.5
+    typical_time_per_rep_sec: 0.35
+    notes: "time_per_rep ≈ sec per meter at ~10.5 km/h"
+    tags: [hyrox, conditioning]
+
+  box_jump:
+    name: "Box jump"
+    name_es: "Salto al cajón"
+    movement_pattern: jump
+    body_segment: lower
+    primary_muscles: [quadriceps, glutes, calves]
+    secondary_muscles: [hamstrings]
+    kinetic_chain: closed
+    laterality_default: bilateral
+    implement: box
+    load_metric_primary: bodyweight_ratio
+    load_metrics_supported: [bodyweight_ratio]
+    mechanical_demand_index: 3.0
+    technical_complexity_index: 2.5
+    typical_time_per_rep_sec: 2.5
+    parallel_category: plyometric
+    variations:
+      - { id: step_down, name: "Step down", modifies: [tempo], mechanical_demand_delta: -0.3, technical_complexity_delta: -0.3 }
+      - { id: rebound, name: "Rebound (reactive)", modifies: [tempo], mechanical_demand_delta: 0.8, technical_complexity_delta: 0.8 }
+    tags: [plyometric, crossfit, hyrox_adjacent]
