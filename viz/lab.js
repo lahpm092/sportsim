@@ -5,6 +5,7 @@
  * parallel-coordinates genome. Footer: transport + the wax seal (θ* reveal).
  */
 import { extract, configureFromData } from "./lab-engine.js";
+import { Choreo, captionOf } from "./choreo.js";
 
 /* ---------------------------------------------------------------- tokens */
 const PAPER = "#efe6d0", PAPER_DEEP = "#e3d5b8", INK = "#1c1712",
@@ -43,7 +44,7 @@ let popZ = null, champZ = null;
 let valCount = 0, sealBroken = false;
 let selectedTid = PLAYERS[3].tid;   // team-0 playmaker to start
 let champStats = null;         // stats extracted from the champion's match
-let match = null, pendingMatch = null;
+let match = null, pendingMatch = null, choreo = null;
 let running = true, speedMode = "cinematic", seed = 7;
 let evalsRate = null, lastRateT = 0, lastRateMatches = 0;
 
@@ -212,6 +213,7 @@ function applyPendingMatch() {
     scoreAt[k] = [g0, g1]; possAt[k] = p0 / (k + 1);
   }
   cursor = 0; nextK = 0; swapAt = -1; anns = [];
+  choreo = new Choreo(match, PLAYERS, DATA.engine);
   champStats = extract([{ events: match.events, meta: { score: match.score, possession: match.possession } }], PLAYERS);
   $("#matchmeta").textContent = `champion · gen ${match.gen} · loss ${match.loss.toFixed(2)}`;
   note(`champion improved · gen ${match.gen}`);
@@ -228,77 +230,58 @@ function lerpPos(t, i) {
   if (Math.hypot(q[0] - p[0], q[1] - p[1]) > 14) return a < 0.5 ? p : q;  // kickoff snap
   return [p[0] + (q[0] - p[0]) * a, p[1] + (q[1] - p[1]) * a];
 }
-function lerpBall(t) {
-  const k = Math.min(Math.floor(t), T_GAME - 1), k2 = Math.min(k + 1, T_GAME - 1), a = t - k;
-  const o = k * 2, o2 = k2 * 2;
-  const p = [match.ball[o], match.ball[o + 1]], q = [match.ball[o2], match.ball[o2 + 1]];
-  if (Math.hypot(q[0] - p[0], q[1] - p[1]) > 14) return a < 0.5 ? p : q;
-  return [p[0] + (q[0] - p[0]) * a, p[1] + (q[1] - p[1]) * a];
-}
-
-/* event → annotation + caption */
-function boundaryExit(x0, y0, x1, y1) {             // extend p0→p1 to the pitch edge
-  const dx = x1 - x0, dy = y1 - y0;
-  let t = Infinity;
-  if (dx > 1e-9) t = Math.min(t, (PITCH_L - x0) / dx);
-  if (dx < -1e-9) t = Math.min(t, (0 - x0) / dx);
-  if (dy > 1e-9) t = Math.min(t, (PITCH_W - y0) / dy);
-  if (dy < -1e-9) t = Math.min(t, (0 - y0) / dy);
-  if (!isFinite(t)) t = 1;
-  return [x0 + dx * Math.max(t, 1), y0 + dy * Math.max(t, 1)];
-}
+/* event → annotation + caption (text shared with the theater via captionOf) */
 function spawnEvent(ev, k) {
   const nm = (tid) => `№ ${tid}`;
-  let cap = "";
+  const tn = (tid) => (teamOfTid[tid] === 0 ? "Atlético" : "Sevilla");
+  const cap = captionOf(ev, nm, tn);
   if (ev.type === "pass") {
     const tgt = posAt(k, idxOfTid[ev.tgt]);
     const p0 = [ev.x, ev.y];
-    const verb = ev.d < 12 ? "slips it to" : ev.d < 25 ? "finds" : "threads long toward";
+    if (ev.restart) anns.push({ kind: "spot", p0, life: 1.4, ttl: 1.4 });
+    const cutPoint = () => {                        // interception/deflection point
+      const jp = posAt(k, idxOfTid[ev.jlane]);
+      const dx = tgt[0] - p0[0], dy = tgt[1] - p0[1], L2 = dx * dx + dy * dy || 1e-9;
+      const s = Math.max(0.08, Math.min(0.92, ((jp[0] - p0[0]) * dx + (jp[1] - p0[1]) * dy) / L2));
+      return [p0[0] + dx * s, p0[1] + dy * s];
+    };
     if (ev.outcome === "complete") {
       anns.push({ kind: "pass", p0, p1: tgt, dash: null, life: 0.8, ttl: 0.8 });
-      cap = `${nm(ev.tid)} ${verb} ${nm(ev.tgt)} — ${Math.round(ev.d)} m`;
     } else if (ev.outcome === "intercepted") {
-      const ji = idxOfTid[ev.jlane], jp = posAt(k, ji);
-      const dx = tgt[0] - p0[0], dy = tgt[1] - p0[1], L2 = dx * dx + dy * dy || 1e-9;
-      let s = ((jp[0] - p0[0]) * dx + (jp[1] - p0[1]) * dy) / L2;
-      s = Math.max(0.08, Math.min(0.92, s));
-      const cut = [p0[0] + dx * s, p0[1] + dy * s];
+      const cut = cutPoint();
       anns.push({ kind: "pass", p0, p1: cut, dash: [4, 3], life: 0.8, ttl: 0.8, xmark: cut });
-      cap = `${nm(ev.tid)} ${verb} ${nm(ev.tgt)} — cut out by ${nm(ev.jlane)}`;
+    } else if (ev.outcome === "deflected" || ev.outcome === "deflected_out") {
+      const cut = cutPoint();
+      const p2 = ev.outcome === "deflected" ? ev.end : ev.exit;
+      anns.push({ kind: "pass", p0, p1: cut, dash: [4, 3], life: 0.8, ttl: 0.8 });
+      anns.push({ kind: "pass", p0: cut, p1: p2, dash: [2, 3], life: 0.9, ttl: 0.9,
+        xmark: ev.outcome === "deflected_out" ? p2 : null });
     } else if (ev.outcome === "out") {
-      const exit = boundaryExit(p0[0], p0[1], tgt[0], tgt[1]);
-      anns.push({ kind: "pass", p0, p1: exit, dash: [2, 3], life: 0.8, ttl: 0.8, xmark: exit });
-      cap = `${nm(ev.tid)} overhits — out of play`;
-    } else if (ev.outcome === "ctl_fail") {
-      anns.push({ kind: "pass", p0, p1: tgt, dash: [4, 3], life: 0.8, ttl: 0.8 });
-      cap = `${nm(ev.tgt)} can't tame the delivery from ${nm(ev.tid)}`;
-    } else {
-      anns.push({ kind: "pass", p0, p1: tgt, dash: [4, 3], life: 0.8, ttl: 0.8 });
-      cap = `${nm(ev.tid)}'s ball runs loose`;
+      anns.push({ kind: "pass", p0, p1: ev.exit, dash: [2, 3], life: 0.9, ttl: 0.9, xmark: ev.exit });
+    } else if (ev.outcome === "keeper") {
+      anns.push({ kind: "pass", p0, p1: ev.end, dash: [4, 3], life: 0.8, ttl: 0.8 });
+    } else {                                        // ctl_fail | loose
+      anns.push({ kind: "pass", p0, p1: ev.end || tgt, dash: [4, 3], life: 0.8, ttl: 0.8 });
     }
   } else if (ev.type === "carry") {
     const end = posAt(k, idxOfTid[ev.tid]);
     anns.push({ kind: "carry", p0: [ev.x, ev.y], p1: end, life: 1.2, ttl: 1.2 });
-    cap = ev.outcome === "tackled"
-      ? `${nm(ev.tid)} dispossessed by ${nm(ev.tkl)}`
-      : ev.contests.length
-        ? `${nm(ev.tid)} rides the challenge — ${Math.round(ev.len)} m`
-        : `${nm(ev.tid)} carries ${Math.round(ev.len)} m`;
   } else if (ev.type === "shot") {
     const t = teamOfTid[ev.tid];
-    const goal = [t === 0 ? PITCH_L : 0, PITCH_W / 2];
+    const gx = t === 0 ? PITCH_L : 0;
+    const aim = [gx, 34 + ev.place[0]];             // engine-decided placement
     if (ev.outcome === "goal") {
-      anns.push({ kind: "shot", p0: [ev.x, ev.y], p1: goal, life: 1.2, ttl: 1.2 });
-      anns.push({ kind: "burst", p0: goal, life: 1.6, ttl: 1.6 });
-      cap = `${nm(ev.tid)} scores from ${Math.round(ev.d)} m`;
+      anns.push({ kind: "shot", p0: [ev.x, ev.y], p1: aim, life: 1.2, ttl: 1.2 });
+      anns.push({ kind: "burst", p0: aim, life: 1.6, ttl: 1.6 });
       if (pendingMatch) swapAt = k + 1.2;           // swap streams at the restart
+    } else if (ev.outcome === "post") {
+      anns.push({ kind: "shot", p0: [ev.x, ev.y], p1: aim, life: 1.2, ttl: 1.2, xmark: aim });
+      if (ev.reb) anns.push({ kind: "pass", p0: aim, p1: ev.reb, dash: [2, 3], life: 1.0, ttl: 1.0 });
     } else if (ev.outcome === "save") {
-      anns.push({ kind: "shot", p0: [ev.x, ev.y], p1: goal, life: 1.2, ttl: 1.2, save: true });
-      cap = `${nm(ev.tid)}'s strike is turned away`;
-    } else {
-      const past = [goal[0] + (t === 0 ? 3 : -3), goal[1] + (ev.y < 34 ? -4 : 4)];
+      anns.push({ kind: "shot", p0: [ev.x, ev.y], p1: aim, life: 1.2, ttl: 1.2, save: true });
+    } else {                                        // off
+      const past = [gx + (t === 0 ? 3 : -3), Math.max(1, Math.min(67, 34 + ev.place[0]))];
       anns.push({ kind: "shot", p0: [ev.x, ev.y], p1: past, life: 1.2, ttl: 1.2, xmark: past });
-      cap = `${nm(ev.tid)} shoots wide`;
     }
   }
   $("#captiontext").textContent = cap;
@@ -345,7 +328,12 @@ function renderBoard(ts) {
     if (a.life <= 0) { anns.splice(i, 1); continue; }
     const alpha = Math.min(1, a.life / a.ttl + 0.15);
     ctx.globalAlpha = alpha;
-    if (a.kind === "burst") {
+    if (a.kind === "spot") {                        // dead-ball spot: double ring
+      ctx.strokeStyle = GOLD; ctx.lineWidth = 1.2;
+      for (const r of [0.8, 1.5]) {
+        ctx.beginPath(); ctx.arc(mx(a.p0[0]), my(a.p0[1]), r * sc, 0, Math.PI * 2); ctx.stroke();
+      }
+    } else if (a.kind === "burst") {
       ctx.strokeStyle = GOLD; ctx.lineWidth = 1.4;
       const r0 = (1 - a.life / a.ttl) * 3.2 + 1.2;
       for (let q = 0; q < 10; q++) {
@@ -404,13 +392,24 @@ function renderBoard(ts) {
     ctx.fillText(String(p.tid), X + 1.45 * sc, Y - 0.5 * sc);
   }
 
-  /* the golden ball */
-  if (match) {
-    const [bxm, bym] = lerpBall(cursor);
+  /* the golden ball — choreographed: flights, arcs, dead-ball ceremonies */
+  if (match && choreo) {
+    const b = choreo.ballAt(cursor);
+    let bxm, bym, bz = b.z || 0;
+    if (b.mode === "held" && b.held != null) {
+      const p = lerpPos(cursor, b.held);
+      bxm = p[0]; bym = p[1]; bz = 0;
+    } else { bxm = b.x; bym = b.y; }
+    ctx.fillStyle = "rgba(40,28,14,.20)";           // shadow shrinks as the ball rises
+    ctx.beginPath();
+    ctx.ellipse(mx(bxm), my(bym), Math.max(0.12, 0.4 - bz * 0.03) * sc,
+      Math.max(0.06, 0.18 - bz * 0.015) * sc, 0, 0, Math.PI * 2);
+    ctx.fill();
     ctx.fillStyle = GOLD;
     ctx.strokeStyle = INK;
     ctx.lineWidth = 0.8;
-    ctx.beginPath(); ctx.arc(mx(bxm), my(bym) - 0.5 * sc, 0.45 * sc, 0, Math.PI * 2);
+    const r = (0.45 + bz * 0.035) * sc;
+    ctx.beginPath(); ctx.arc(mx(bxm), my(bym) - (0.5 + bz * 0.65) * sc, r, 0, Math.PI * 2);
     ctx.fill(); ctx.stroke();
   }
   requestAnimationFrame(renderBoard);
@@ -736,7 +735,7 @@ $("#reset").onclick = () => {
   worker.postMessage({ type: "reset", seed });
   hist = []; latest = null; valCount = 0; sealBroken = false;
   evalsRate = null; lastRateT = 0; lastRateMatches = 0;
-  pendingMatch = null; champStats = null; match = null;
+  pendingMatch = null; champStats = null; match = null; choreo = null;
   $("#score").textContent = "0 — 0"; $("#labclock").textContent = "00:00";
   $("#matchmeta").textContent = "";
   $("#captiontext").textContent = "the engine awaits its first champion…";
@@ -751,6 +750,19 @@ $("#reset").onclick = () => {
 const ro = new ResizeObserver(() => { sizeBoard(); drawFitness(); drawMicroscope(); drawGenome(); });
 ro.observe(wrap);
 ro.observe($("#panels"));
+
+/* verification hooks (headless harness + debugging) */
+window.__lab = {
+  seek(t) { cursor = Math.max(0, t); nextK = Math.floor(cursor); anns = []; },
+  info() { return { cursor, hasMatch: !!match, gen: latest ? latest.gen : 0 }; },
+  events(kind) {
+    if (!match) return null;
+    return match.events
+      .filter((e) => (kind === "shot" ? e.type === "shot" : kind === "restart" ? !!e.restart
+        : kind === "out" ? e.outcome === "out" || e.outcome === "deflected_out" : true))
+      .map((e) => ({ k: e.k, type: e.type, outcome: e.outcome, restart: e.restart || null }));
+  },
+};
 
 /* ---------------------------------------------------------------- go */
 sizeBoard();

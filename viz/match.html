@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>SportSim — The Theater</title>
+<style>
+  :root{
+    --paper:#efe6d0; --paper-deep:#e3d5b8; --paper-shadow:#cdbd9a;
+    --ink:#1c1712; --ink-soft:#4a4036; --ink-faint:#8a7d6a;
+    --blue:#2e64b0; --crimson:#a13a24; --gold:#a97b17;
+    --hairline:#d8c9a8;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden;background:var(--paper);color:var(--ink);
+    font-family:var(--serif);-webkit-font-smoothing:antialiased}
+  #stage{position:fixed;inset:0}
+  #stage canvas{display:block}
+
+  .grain{position:fixed;inset:0;pointer-events:none;z-index:40;opacity:.5;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.06'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .vignette{position:fixed;inset:0;pointer-events:none;z-index:39;
+    background:radial-gradient(ellipse 130% 105% at 50% 42%,transparent 55%,rgba(76,60,38,.20) 100%)}
+
+  header{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;
+    justify-content:space-between;align-items:flex-start;padding:26px 34px;pointer-events:none}
+  .title h1{font-size:21px;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
+  .title .sub{font-size:12.5px;font-style:italic;color:var(--ink-soft);margin-top:4px;letter-spacing:.02em}
+  nav{display:flex;gap:6px;pointer-events:auto}
+  nav a{font-family:var(--serif);font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;
+    background:transparent;border:1px solid transparent;color:var(--ink-faint);
+    padding:8px 14px;cursor:pointer;transition:all .25s;text-decoration:none;display:inline-block}
+  nav a:hover{color:var(--ink)}
+  nav a.active{color:var(--ink);border-bottom:1px solid var(--ink)}
+
+  /* scoreline */
+  #scoreline{position:fixed;top:96px;left:50%;transform:translateX(-50%);z-index:45;
+    display:flex;align-items:baseline;gap:16px;padding:10px 26px;
+    background:color-mix(in srgb,var(--paper) 84%,transparent);
+    border:1px solid var(--hairline);border-radius:2px;backdrop-filter:blur(6px)}
+  #scoreline .tname{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-soft)}
+  #scoreline .tname.t0{color:var(--blue)} #scoreline .tname.t1{color:var(--crimson)}
+  #score{font-size:24px;font-weight:600;letter-spacing:.08em;font-variant-numeric:tabular-nums}
+  #clock{font-size:12.5px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+  #half{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-faint)}
+
+  /* caption */
+  #caption{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:45;
+    font-size:14.5px;font-style:italic;color:var(--ink-soft);letter-spacing:.02em;
+    padding:8px 22px;background:color-mix(in srgb,var(--paper) 80%,transparent);
+    border:1px solid var(--hairline);border-radius:2px;backdrop-filter:blur(6px);
+    max-width:72vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    transition:opacity .4s}
+  #vignette-note{position:fixed;left:50%;bottom:64px;transform:translateX(-50%);z-index:45;
+    font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);
+    opacity:0;transition:opacity .5s}
+
+  /* transport */
+  #transport{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:50;
+    display:flex;align-items:center;gap:14px;padding:9px 20px;
+    background:color-mix(in srgb,var(--paper) 82%,transparent);
+    border:1px solid var(--hairline);border-radius:2px;backdrop-filter:blur(6px)}
+  #transport button{font-family:var(--serif);background:none;border:none;cursor:pointer;
+    color:var(--ink);font-size:15px;padding:2px 6px}
+  #transport .mode{font-size:10.5px;letter-spacing:.2em;color:var(--ink-faint);cursor:pointer;
+    text-transform:uppercase;padding:4px 8px;border:1px solid transparent;user-select:none}
+  #transport .mode.active{color:var(--ink);border:1px solid var(--hairline);border-radius:2px;background:var(--paper-deep)}
+  #matchno{font-size:11px;color:var(--ink-faint);font-variant-numeric:tabular-nums;font-style:italic}
+
+  footer{position:fixed;left:34px;bottom:24px;z-index:41;font-size:10px;color:var(--ink-faint);
+    font-style:italic;letter-spacing:.03em;pointer-events:none}
+
+  #loading{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
+    background:var(--paper);flex-direction:column;gap:14px;transition:opacity .8s}
+  #loading .mark{font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:var(--ink-soft)}
+  #loading .hint{font-size:11.5px;font-style:italic;color:var(--ink-faint);display:none}
+  #loading .bar{width:180px;height:1px;background:var(--hairline);overflow:hidden}
+  #loading .bar i{display:block;height:100%;width:40%;background:var(--ink);animation:sweep 1.2s infinite ease-in-out}
+  @keyframes sweep{0%{transform:translateX(-100%)}100%{transform:translateX(350%)}}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div class="vignette"></div><div class="grain"></div>
+
+<header>
+  <div class="title">
+    <h1>SportSim</h1>
+    <div class="sub">the theater — a live match on the possession graph · rapier physics at the goalmouth</div>
+  </div>
+  <nav>
+    <a href="./index.html">Board</a>
+    <a href="./lab.html">Laboratory</a>
+    <a href="./match.html" class="active">Theater</a>
+  </nav>
+</header>
+
+<div id="scoreline">
+  <span class="tname t0">Atlético</span>
+  <span id="score">0 — 0</span>
+  <span class="tname t1">Sevilla</span>
+  <span id="clock">00:00</span>
+  <span id="half" title="engine tick">tick 0</span>
+</div>
+
+<div id="caption">the pieces take the field…</div>
+<div id="vignette-note"></div>
+
+<div id="transport">
+  <button id="play" title="pause / play">❚❚</button>
+  <span class="mode" data-speed="1.5">Stroll</span>
+  <span class="mode active" data-speed="3">Match</span>
+  <span class="mode" data-speed="6">Blitz</span>
+  <span id="matchno">match —</span>
+</div>
+
+<footer>match footage: Atlético de Madrid × Sevilla FC — Samsung España, CC BY 3.0 · segmentation: Meta SAM 3 · physics: rapier</footer>
+<div id="loading">
+  <div class="mark">SportSim</div>
+  <div class="bar"><i></i></div>
+  <div class="hint"></div>
+</div>
+
+<script type="module" src="./match.js"></script>
+</body>
+</html>
